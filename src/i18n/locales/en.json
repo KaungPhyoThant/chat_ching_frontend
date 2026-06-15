@@ -1,0 +1,121 @@
+{
+  "common": {
+    "appName": "AI Shop Admin",
+    "register": "Register",
+    "book": "Book appointment",
+    "addUser": "Add user",
+    "search": "Search patients, MRN, phone…",
+    "searchAppointments": "Search appointments, patient, doctor…",
+    "filterStatus": "Filter status",
+    "globalSearch": "Search patients, appointments, records…",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "add": "Add",
+    "create": "Create"
+  },
+  "groups": {
+    "catalog": "Catalog",
+    "operations": "Operations",
+    "admin": "Admin"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "catalog": "Products",
+    "categories": "Categories",
+    "inventory": "Inventory",
+    "orders": "Orders",
+    "customers": "Customers",
+    "conversations": "Conversations",
+    "promotions": "Promotions",
+    "broadcasts": "Broadcasts",
+    "reports": "Reports",
+    "users": "Staff users",
+    "rbac": "Roles & permissions",
+    "auditLogs": "Audit logs",
+    "notifications": "Notifications",
+    "settings": "Settings"
+  },
+  "commandPalette": {
+    "title": "Command palette",
+    "noResults": "No results found",
+    "hintNavigate": "↑↓ to navigate · Enter to open",
+    "hintClose": "Esc to close",
+    "groups": {
+      "navigation": "Pages",
+      "actions": "Quick actions",
+      "products": "Patients"
+    }
+  },
+  "settings": {
+    "subtitle": "Account & preferences",
+    "tabProfile": "Profile",
+    "tabPreferences": "Preferences",
+    "tabSecurity": "Security",
+    "profileLead": "Your name and contact information shown across the system.",
+    "preferencesLead": "Appearance and layout. Changes apply immediately.",
+    "securityLead": "Password and sign-in security for your account.",
+    "fullName": "Full name",
+    "fullNameHint": "Shown in the top bar and audit logs.",
+    "role": "Role",
+    "roleHint": "Assigned by your administrator.",
+    "email": "Email",
+    "emailHint": "Used for notifications and password recovery.",
+    "saveProfile": "Save profile",
+    "navigationLayout": "Navigation layout",
+    "navigationLayoutHint": "Sidebar on the left or menu bar across the top.",
+    "navigationSidebar": "Sidebar",
+    "navigationMenubar": "Menu bar",
+    "theme": "Theme",
+    "themeHint": "Light or dark interface.",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language",
+    "languageHint": "Interface language.",
+    "twoFactor": "Two-factor authentication",
+    "twoFactorHint": "Extra sign-in protection with an authenticator app.",
+    "twoFactorEnabled": "Enabled (TOTP)",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "newPasswordHint": "At least 8 characters.",
+    "updatePassword": "Update password"
+  },
+  "topbar": {
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "logout": "Log out",
+    "toggleSidebar": "Toggle sidebar",
+    "openMenu": "Open navigation menu"
+  },
+  "appointments": {
+    "subtitle": "Scheduling & queue management"
+  },
+  "patients": {
+    "title": "Patients",
+    "subtitle": "Manage registrations and patient records",
+    "name": "Name / MRN",
+    "phone": "Phone",
+    "gender": "Gender",
+    "status": "Status",
+    "deleteConfirm": "Delete this patient?",
+    "deleted": "Patient deleted"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "gender": {
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
+  },
+  "services": {
+    "categories": {
+      "consultation": "Consultation",
+      "procedure": "Procedure",
+      "investigation": "Investigation",
+      "roomCharge": "Room Charge",
+      "nursingFee": "Nursing Fee",
+      "medicalSupplies": "Medical Supplies"
+    }
+  }
+}

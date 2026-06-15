@@ -1,0 +1,121 @@
+{
+  "common": {
+    "appName": "AI Shop Admin",
+    "register": "မှတ်ပုံတင်",
+    "book": "ချိန်းဆိုရန်",
+    "addUser": "အသုံးပြုသူ ထည့်ရန်",
+    "search": "လူနာ၊ MRN၊ ဖုန်း ရှာရန်…",
+    "searchAppointments": "ချိန်းဆိုမှု၊ လူနာ၊ ဆရာဝန် ရှာရန်…",
+    "filterStatus": "အခြေအနေ စစ်ထုတ်ရန်",
+    "globalSearch": "လူနာ၊ ချိန်းဆိုမှု၊ မှတ်တမ်း ရှာရန်…",
+    "delete": "ဖျက်ရန်",
+    "cancel": "မလုပ်တော့ပါ",
+    "add": "ထည့်ရန်",
+    "create": "ဖန်တီးရန်"
+  },
+  "groups": {
+    "catalog": "ကုန်ပစ္စည်း",
+    "operations": "လုပ်ငန်းဆောင်တာ",
+    "admin": "စီမံခန့်ခွဲ"
+  },
+  "nav": {
+    "dashboard": "ဒက်ရှ်ဘုတ်",
+    "catalog": "ကုန်ပစ္စည်းများ",
+    "categories": "အမျိုးအစားများ",
+    "inventory": "ပစ္စည်းလက်ကျန်",
+    "orders": "အော်ဒါများ",
+    "customers": "ဖောက်သည်များ",
+    "conversations": "စကားဝိုင်းများ",
+    "promotions": "ပရိုမိုးရှင်းများ",
+    "broadcasts": "ကြေညာချက်များ",
+    "reports": "အစီရင်ခံစာများ",
+    "users": "ဝန်ထမ်းများ",
+    "rbac": "ခွင့်ပြုချက်များ",
+    "auditLogs": "မှတ်တမ်းများ",
+    "notifications": "အသိပေးချက်များ",
+    "settings": "ဆက်တင်များ"
+  },
+  "commandPalette": {
+    "title": "ရှာဖွေရေး မျက်နှာပြင်",
+    "noResults": "ရလဒ် မတွေ့ပါ",
+    "hintNavigate": "↑↓ ရွေးရန် · Enter ဖွင့်ရန်",
+    "hintClose": "Esc ပိတ်ရန်",
+    "groups": {
+      "navigation": "စာမျက်နှာများ",
+      "actions": "လျင်မြန်လုပ်ဆောင်ချက်",
+      "products": "လူနာများ"
+    }
+  },
+  "settings": {
+    "subtitle": "အကောင့်နှင့် နှစ်သက်ရာများ",
+    "tabProfile": "ပရိုဖိုင်",
+    "tabPreferences": "နှစ်သက်ရာများ",
+    "tabSecurity": "လုံခြုံရေး",
+    "profileLead": "စနစ်တလျှောက် ပြသမည့် အမည်နှင့် ဆက်သွယ်ရန် အချက်အလက်။",
+    "preferencesLead": "ပုံပန်းနှင့် အပြင်အဆင်။ ပြောင်းလဲချက်များ ချက်ချင်း အသက်ဝင်သည်။",
+    "securityLead": "သင့်အကောင့်၏ စကားဝှက်နှင့် ဝင်ရောက်မှု လုံခြုံရေး။",
+    "fullName": "အမည် အပြည့်အစုံ",
+    "fullNameHint": "ထိပ်တန်းဘားနှင့် စစ်ဆေးမှတ်တမ်းတွင် ပြသည်။",
+    "role": "အခန်းကဏ္ဍ",
+    "roleHint": "စီမံခန့်ခွဲသူက သတ်မှတ်ပေးသည်။",
+    "email": "အီးမေးလ်",
+    "emailHint": "အကြောင်းကြားချက်နှင့် စကားဝှက်ပြန်ရယူရန် သုံးသည်။",
+    "saveProfile": "ပရိုဖိုင် သိမ်းရန်",
+    "navigationLayout": "လမ်းညွှန်မီနူး ပုံစံ",
+    "navigationLayoutHint": "ဘယ်ဘက် ဘေးဘား သို့မဟုတ် ထိပ်တန်း မီနူးဘား။",
+    "navigationSidebar": "ဘေးဘား",
+    "navigationMenubar": "မီနူးဘား",
+    "theme": "အပြင်အဆင်",
+    "themeHint": "အလင်း သို့မဟုတ် အမှောင် မျက်နှာပြင်။",
+    "themeLight": "အလင်း",
+    "themeDark": "အမှောင်",
+    "language": "ဘာသာစကား",
+    "languageHint": "မျက်နှာပြင် ဘာသာစကား။",
+    "twoFactor": "နှစ်ဆင့် အတည်ပြုခြင်း",
+    "twoFactorHint": "အတည်ပြု အက်ပ်ဖြင့် ထပ်ဆောင်း လုံခြုံရေး။",
+    "twoFactorEnabled": "ဖွင့်ထား (TOTP)",
+    "currentPassword": "လက်ရှိ စကားဝှက်",
+    "newPassword": "စကားဝှက် အသစ်",
+    "newPasswordHint": "အနည်းဆုံး အက္ခရာ ၈ လုံး။",
+    "updatePassword": "စကားဝှက် ပြင်ရန်"
+  },
+  "topbar": {
+    "notifications": "အကြောင်းကြားချက်များ",
+    "profile": "ပရိုဖိုင်",
+    "logout": "ထွက်ရန်",
+    "toggleSidebar": "ဘေးဘားကို ဖွင့်/ပိတ်",
+    "openMenu": "မီနူး ဖွင့်ရန်"
+  },
+  "appointments": {
+    "subtitle": "ချိန်းဆိုမှုနှင့် တန်းစီမှု စီမံခန့်ခွဲမှု"
+  },
+  "patients": {
+    "title": "လူနာများ",
+    "subtitle": "မှတ်ပုံတင်မှုနှင့် လူနာမှတ်တမ်းများ စီမံခန့်ခွဲရန်",
+    "name": "အမည် / MRN",
+    "phone": "ဖုန်း",
+    "gender": "ကျား/မ",
+    "status": "အခြေအနေ",
+    "deleteConfirm": "ဤလူနာကို ဖျက်မလား။",
+    "deleted": "လူနာ ဖျက်ပြီးပါပြီ"
+  },
+  "status": {
+    "active": "သက်ဝင်",
+    "inactive": "ရပ်ဆိုင်း"
+  },
+  "gender": {
+    "male": "ကျား",
+    "female": "မ",
+    "other": "အခြား"
+  },
+  "services": {
+    "categories": {
+      "consultation": "ဆရာဝန်ပြသခ",
+      "procedure": "ဆေးကုသမှု လုပ်ဆောင်ချက်",
+      "investigation": "စမ်းသပ်စစ်ဆေးခ",
+      "roomCharge": "အခန်း/ကုတင်ခ",
+      "nursingFee": "ပြုစုစောင့်ရှောက်ခ",
+      "medicalSupplies": "ဆေးပစ္စည်းသုံးစွဲခ"
+    }
+  }
+}

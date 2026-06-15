@@ -23,6 +23,7 @@
     "catalog": "Products",
     "categories": "Categories",
     "inventory": "Inventory",
+    "priceLists": "Price lists",
     "orders": "Orders",
     "customers": "Customers",
     "conversations": "Conversations",

@@ -3,6 +3,7 @@ import {
   ShoppingOutlined,
   ApartmentOutlined,
   DatabaseOutlined,
+  DollarOutlined,
   ShoppingCartOutlined,
   TeamOutlined,
   MessageOutlined,
@@ -18,6 +19,7 @@ import {
 import type { ReactNode } from "react";
 import { ROUTES } from "./routes";
 import type { Permission } from "@/lib/rbac/permissions";
+import type { FeatureKey } from "@/features/capabilities/types";
 
 export type NavGroup = "catalog" | "operations" | "admin";
 
@@ -29,6 +31,8 @@ export interface NavItem {
   path: string;
   group: NavGroup;
   permission: Permission;
+  /** when set, the item only appears if this capability flag is on */
+  feature?: FeatureKey;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -37,6 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "catalog", labelKey: "catalog", icon: <ShoppingOutlined />, path: ROUTES.catalog, group: "catalog", permission: "product:read" },
   { key: "categories", labelKey: "categories", icon: <ApartmentOutlined />, path: ROUTES.categories, group: "catalog", permission: "product:read" },
   { key: "inventory", labelKey: "inventory", icon: <DatabaseOutlined />, path: ROUTES.inventory, group: "catalog", permission: "product:update" },
+  { key: "priceLists", labelKey: "priceLists", icon: <DollarOutlined />, path: ROUTES.priceLists, group: "catalog", permission: "product:read", feature: "multiPriceList" },
   // Operations
   { key: "orders", labelKey: "orders", icon: <ShoppingCartOutlined />, path: ROUTES.orders, group: "operations", permission: "order:read" },
   { key: "customers", labelKey: "customers", icon: <TeamOutlined />, path: ROUTES.customers, group: "operations", permission: "customer:read" },

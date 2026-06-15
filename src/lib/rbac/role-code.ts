@@ -1,6 +1,7 @@
 import type { Role } from "./permissions";
 
 const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
+  dev: "DEV",
   super_admin: "SUPER_ADMIN",
   admin: "ADMIN",
   catalog_manager: "CATALOG_MANAGER",
@@ -9,6 +10,7 @@ const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
 };
 
 const FRONTEND_ROLES = new Set<Role>([
+  "DEV",
   "SUPER_ADMIN",
   "ADMIN",
   "CATALOG_MANAGER",

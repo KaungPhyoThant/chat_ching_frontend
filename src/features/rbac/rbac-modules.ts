@@ -9,6 +9,7 @@ export const RBAC_MODULES = [
   { module: "report", label: "Reports" },
   { module: "user", label: "Staff users" },
   { module: "settings", label: "Settings" },
+  { module: "capabilities", label: "Capabilities (dev)" },
 ] as const;
 
 export const CRUD_COLUMNS = [

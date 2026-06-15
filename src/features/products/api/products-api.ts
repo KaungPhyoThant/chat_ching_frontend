@@ -1,15 +1,8 @@
 import { apiClient } from "@/lib/api/client";
 import type { Product } from "../types";
 
-export interface ProductPayload {
-  name: string;
-  sku: string;
-  categoryId: string;
-  price: number;
-  stock: number;
-  description?: string;
-  isActive?: boolean;
-}
+/** Create/update payload — a partial product (variants/options/attributes optional). */
+export type ProductPayload = Partial<Product>;
 
 export async function getProducts(): Promise<Product[]> {
   const { data } = await apiClient.get<Product[]>("/products");
@@ -28,7 +21,7 @@ export async function createProduct(payload: ProductPayload): Promise<Product> {
 
 export async function updateProduct(
   id: string,
-  payload: Partial<ProductPayload>,
+  payload: ProductPayload,
 ): Promise<Product> {
   const { data } = await apiClient.patch<Product>(`/products/${id}`, payload);
   return data;

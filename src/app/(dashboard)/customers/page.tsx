@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { App, Button, Descriptions, Drawer, Input, List, Space, Tag } from "antd";
+import { App, Button, Descriptions, Drawer, Input, List, Select, Space, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ContentCard } from "@/components/ui/ContentCard";
@@ -12,6 +12,8 @@ import {
   useCustomers,
   useUpdateCustomer,
 } from "@/features/customers/hooks/useCustomers";
+import { useFeature } from "@/lib/features/useFeature";
+import { useCustomerGroups } from "@/features/pricing/hooks/usePricing";
 import type { Customer } from "@/features/customers/types";
 
 export default function CustomersPage() {
@@ -22,6 +24,8 @@ export default function CustomersPage() {
 
   const { data: detail } = useCustomer(selectedId);
   const updateMutation = useUpdateCustomer();
+  const showGroups = useFeature("customerGroups");
+  const { data: groups = [] } = useCustomerGroups();
 
   const rows = useMemo(
     () =>
@@ -91,7 +95,7 @@ export default function CustomersPage() {
 
       <Drawer size={520} open={!!selectedId} onClose={() => setSelectedId(null)} title={detail?.fullName}>
         {detail && (
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Space orientation="vertical" size="large" style={{ width: "100%" }}>
             <Descriptions column={1} size="small" bordered>
               <Descriptions.Item label="Telegram ID">{detail.telegramId}</Descriptions.Item>
               <Descriptions.Item label="Username">@{detail.username}</Descriptions.Item>
@@ -99,6 +103,21 @@ export default function CustomersPage() {
               <Descriptions.Item label="Address">{detail.address ?? "—"}</Descriptions.Item>
               <Descriptions.Item label="Language">{detail.languageCode}</Descriptions.Item>
             </Descriptions>
+
+            {showGroups && (
+              <div>
+                <div style={{ marginBottom: 6, fontWeight: 500 }}>Customer group</div>
+                <Select
+                  style={{ width: 240 }}
+                  value={detail.groupId}
+                  placeholder="Select group"
+                  options={groups.map((g) => ({ label: g.name, value: g.id }))}
+                  onChange={(groupId) =>
+                    updateMutation.mutate({ id: detail.id, payload: { groupId } })
+                  }
+                />
+              </div>
+            )}
 
             <Button danger={!detail.isBlocked} onClick={() => toggleBlock(detail)} loading={updateMutation.isPending}>
               {detail.isBlocked ? "Unblock customer" : "Block customer"}

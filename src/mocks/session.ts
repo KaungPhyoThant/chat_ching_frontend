@@ -26,11 +26,11 @@ function clearMockCookie(): void {
 }
 
 export const MOCK_API_USER: ApiUser = {
-  id: "usr_1",
-  email: "admin@example.com",
-  fullName: "System Administrator",
-  role: "super_admin",
-  roleCode: "SUPER_ADMIN",
+  id: "usr_dev",
+  email: "dev@example.com",
+  fullName: "Platform Developer",
+  role: "dev",
+  roleCode: "DEV",
   permissions: [],
   isActive: true,
   createdAt: new Date("2026-01-01").toISOString(),

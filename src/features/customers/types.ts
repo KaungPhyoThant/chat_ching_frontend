@@ -7,6 +7,7 @@ export interface Customer {
   address?: string;
   languageCode: string;
   isBlocked: boolean;
+  groupId?: string;
   orderCount: number;
   totalSpent: number;
   createdAt: string;

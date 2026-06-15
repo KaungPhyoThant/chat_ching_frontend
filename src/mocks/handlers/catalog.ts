@@ -33,6 +33,23 @@ export const catalogHandlers = [
       images: body.images ?? [],
       isActive: body.isActive ?? true,
       createdAt: daysAgo(0),
+      hasVariants: body.hasVariants ?? false,
+      baseCurrency: body.baseCurrency ?? "MMK",
+      optionTypes: body.optionTypes ?? [],
+      variants:
+        body.variants ?? [
+          {
+            id: `var_${Date.now()}`,
+            productId: "",
+            sku: body.sku ?? "SKU",
+            optionValueIds: [],
+            price: Number(body.price ?? 0),
+            stock: Number(body.stock ?? 0),
+            isActive: true,
+            tiers: [],
+          },
+        ],
+      attributes: body.attributes,
     };
     db.products.insert(product);
     return ok(product);

@@ -12,6 +12,7 @@ import { FilterSelect } from "@/components/ui/FilterSelect";
 import { formatCurrency } from "@/lib/format";
 import { useProducts, useDeleteProduct } from "@/features/products/hooks/useProducts";
 import { useCategories } from "@/features/categories/hooks/useCategories";
+import { useFeature } from "@/lib/features/useFeature";
 import { ProductFormModal } from "@/features/products/components/ProductFormModal";
 import type { Product } from "@/features/products/types";
 
@@ -26,6 +27,7 @@ export default function CatalogPage() {
   const { data: products = [], isLoading } = useProducts();
   const { data: categories = [] } = useCategories();
   const deleteMutation = useDeleteProduct();
+  const hasVariants = useFeature("productVariants");
 
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>();
@@ -83,7 +85,13 @@ export default function CatalogPage() {
       dataIndex: "price",
       align: "right",
       sorter: (a, b) => a.price - b.price,
-      render: (price: number) => formatCurrency(price),
+      render: (price: number, p) => {
+        if (hasVariants && p.variants.length > 1) {
+          const prices = p.variants.map((v) => v.price);
+          return `${formatCurrency(Math.min(...prices))} – ${formatCurrency(Math.max(...prices))}`;
+        }
+        return formatCurrency(price);
+      },
     },
     { title: "Stock", dataIndex: "stock", align: "center", render: stockTag },
     {

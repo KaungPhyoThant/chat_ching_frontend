@@ -17,6 +17,12 @@ describe("role-code", () => {
     expect(toBackendRole("ORDER_MANAGER")).toBe("order_manager");
   });
 
+  it("normalizes the dev role", () => {
+    expect(normalizeRole("dev")).toBe("DEV");
+    expect(normalizeRole("DEV")).toBe("DEV");
+    expect(toBackendRole("DEV")).toBe("dev");
+  });
+
   it("rejects unknown role codes", () => {
     expect(() => normalizeRole("owner")).toThrow("Unknown role code");
   });

@@ -109,7 +109,7 @@ export default function OrdersPage() {
         title={current ? `Order ${current.orderNo}` : ""}
       >
         {current && (
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Space orientation="vertical" size="large" style={{ width: "100%" }}>
             <Space align="center">
               <span>Status:</span>
               <Select

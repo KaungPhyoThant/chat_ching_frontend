@@ -17,6 +17,9 @@ import type { AuditEntry } from "@/features/audit/api/audit-api";
 import type { AppNotification } from "@/features/notifications/data";
 import { MOCK_NOTIFICATIONS } from "@/features/notifications/data";
 import { CRUD_COLUMNS, RBAC_MODULES } from "@/features/rbac/rbac-modules";
+import { FEATURE_DEFAULTS } from "@/config/feature-defaults";
+import type { Capabilities } from "@/features/capabilities/types";
+import type { CustomerGroup, PriceList } from "@/features/pricing/types";
 
 // ---------- Categories ----------
 const categorySeed: Category[] = [
@@ -59,6 +62,22 @@ for (const [categoryId, names] of Object.entries(PRODUCT_NAMES)) {
       images: [`https://picsum.photos/seed/prd${pIdx}/320/320`],
       isActive: pIdx % 7 !== 0,
       createdAt: daysAgo(pIdx),
+      hasVariants: false,
+      baseCurrency: "MMK",
+      optionTypes: [],
+      variants: [
+        {
+          id: `var_${pIdx}`,
+          productId: `prd_${pIdx}`,
+          sku: `SKU-${String(pIdx).padStart(4, "0")}`,
+          optionValueIds: [],
+          price,
+          stock,
+          image: `https://picsum.photos/seed/prd${pIdx}/320/320`,
+          isActive: true,
+          tiers: [],
+        },
+      ],
     });
   }
 }
@@ -80,6 +99,7 @@ const customerSeed: Customer[] = CUSTOMER_NAMES.map((fullName, i) => ({
   address: i % 3 === 0 ? "Yangon" : i % 3 === 1 ? "Mandalay" : "Naypyitaw",
   languageCode: i % 4 === 0 ? "en" : "my",
   isBlocked: i === 9,
+  groupId: i === 0 ? "grp_wholesale" : "grp_retail",
   orderCount: 0,
   totalSpent: 0,
   createdAt: daysAgo(60 - i),
@@ -234,7 +254,43 @@ const auditSeed: AuditEntry[] = Array.from({ length: 14 }, (_, i) => ({
 // ---------- Notifications ----------
 const notificationSeed: AppNotification[] = MOCK_NOTIFICATIONS.map((n) => ({ ...n }));
 
+// ---------- Customer groups & price lists ----------
+const customerGroupSeed: CustomerGroup[] = [
+  { id: "grp_retail", code: "RETAIL", name: "Retail", isDefault: true },
+  { id: "grp_wholesale", code: "WHOLESALE", name: "Wholesale", isDefault: false },
+  { id: "grp_vip", code: "VIP", name: "VIP", isDefault: false },
+];
+
+// Default base price list (MMK, retail): one item per existing variant.
+const defaultPriceListItems = productSeed.flatMap((p) =>
+  p.variants.map((v) => ({
+    id: `pli_${v.id}`,
+    priceListId: "pl_default",
+    variantId: v.id,
+    price: v.price,
+    tiers: [],
+  })),
+);
+const priceListSeed: PriceList[] = [
+  {
+    id: "pl_default",
+    name: "Retail (MMK)",
+    currency: "MMK",
+    customerGroupId: "grp_retail",
+    isDefault: true,
+    priority: 0,
+    isActive: true,
+    items: defaultPriceListItems,
+  },
+];
+
+// ---------- Capabilities (runtime feature flags) ----------
+const capabilities = { current: { ...FEATURE_DEFAULTS } as Capabilities };
+
 export const db = {
+  capabilities,
+  customerGroups: new Collection<CustomerGroup>(customerGroupSeed),
+  priceLists: new Collection<PriceList>(priceListSeed),
   categories: new Collection<Category>(categorySeed),
   products: new Collection<Product>(productSeed),
   customers: new Collection<Customer>(customerSeed),

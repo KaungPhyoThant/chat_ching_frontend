@@ -38,9 +38,9 @@ export function AsyncState({
       <Alert
         type="error"
         showIcon
-        message="Unable to load data"
+        title="Unable to load data"
         description={
-          <Space direction="vertical" size={8}>
+          <Space orientation="vertical" size={8}>
             <span>{errorMessage(error)}</span>
             {onRetry ? (
               <Button size="small" onClick={onRetry}>

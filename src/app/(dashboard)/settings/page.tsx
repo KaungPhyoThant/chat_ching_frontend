@@ -1,12 +1,47 @@
 "use client";
 
-import { App, Button, Form, Input, Segmented, Tabs, Tag } from "antd";
+import { App, Button, Form, Input, Segmented, Switch, Tabs, Tag } from "antd";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SettingRow } from "@/features/settings/components/SettingRow";
 import { SettingsTabPanel } from "@/features/settings/components/SettingsTabPanel";
 import { useUIStore } from "@/store/ui-store";
 import { usePermissions } from "@/lib/rbac/usePermissions";
+import {
+  useCapabilitiesQuery,
+  useUpdateCapabilities,
+} from "@/features/capabilities/hooks/useCapabilities";
+import type { FeatureKey } from "@/features/capabilities/types";
+
+const CAPABILITY_ROWS: { key: FeatureKey; label: string; help: string }[] = [
+  { key: "productVariants", label: "Product variants", help: "Dependent option tree (Color → Size …)" },
+  { key: "tieredPricing", label: "Tiered / volume pricing", help: "Quantity price breaks" },
+  { key: "customerGroups", label: "Customer groups", help: "Retail / wholesale / VIP pricing" },
+  { key: "multiPriceList", label: "Multiple price lists", help: "Per group / currency / season" },
+  { key: "multiCurrency", label: "Multi-currency", help: "Sell in more than one currency" },
+  { key: "productAttributes", label: "Custom product attributes", help: "Arbitrary key/value fields" },
+];
+
+function CapabilitiesTab() {
+  const { data: caps } = useCapabilitiesQuery();
+  const update = useUpdateCapabilities();
+
+  return (
+    <SettingsTabPanel lead="Vendor-only switches. Turn product & pricing capabilities on per client; clients never see this tab.">
+      <div className="app-settings-rows">
+        {CAPABILITY_ROWS.map((row) => (
+          <SettingRow key={row.key} title={row.label} description={row.help}>
+            <Switch
+              checked={!!caps?.[row.key]}
+              loading={update.isPending}
+              onChange={(checked) => update.mutate({ [row.key]: checked })}
+            />
+          </SettingRow>
+        ))}
+      </div>
+    </SettingsTabPanel>
+  );
+}
 
 function ProfileTab() {
   const t = useTranslations("settings");
@@ -154,21 +189,26 @@ function SecurityTab() {
 
 export default function SettingsPage() {
   const t = useTranslations();
+  const { can } = usePermissions();
+
+  const items = [
+    { key: "profile", label: t("settings.tabProfile"), children: <ProfileTab /> },
+    {
+      key: "preferences",
+      label: t("settings.tabPreferences"),
+      children: <PreferencesTab />,
+    },
+    { key: "security", label: t("settings.tabSecurity"), children: <SecurityTab /> },
+  ];
+
+  if (can("capabilities:manage")) {
+    items.push({ key: "capabilities", label: "Capabilities", children: <CapabilitiesTab /> });
+  }
 
   return (
     <>
       <PageHeader title={t("nav.settings")} subtitle={t("settings.subtitle")} />
-      <Tabs
-        items={[
-          { key: "profile", label: t("settings.tabProfile"), children: <ProfileTab /> },
-          {
-            key: "preferences",
-            label: t("settings.tabPreferences"),
-            children: <PreferencesTab />,
-          },
-          { key: "security", label: t("settings.tabSecurity"), children: <SecurityTab /> },
-        ]}
-      />
+      <Tabs items={items} />
     </>
   );
 }

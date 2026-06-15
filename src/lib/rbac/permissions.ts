@@ -7,6 +7,7 @@ import {
 
 /** Role codes — mirror database `roles.code`. */
 export type Role =
+  | "DEV"
   | "SUPER_ADMIN"
   | "ADMIN"
   | "CATALOG_MANAGER"
@@ -85,8 +86,10 @@ function crud(
 
 /** Fallback when session permissions are not loaded (MSW / offline). */
 export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
+  // DEV is the only role with capability perms (gates the Settings panel).
+  DEV: ALL_PERMISSIONS.filter((p) => !p.endsWith(":manage")) as Permission[],
   SUPER_ADMIN: ALL_PERMISSIONS.filter(
-    (p) => !p.endsWith(":manage"),
+    (p) => !p.endsWith(":manage") && !p.startsWith("capabilities:"),
   ) as Permission[],
   ADMIN: [
     ...crud("product", ["read", "create", "update", "delete"]),

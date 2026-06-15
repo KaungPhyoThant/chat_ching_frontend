@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { NAV_ITEMS, NAV_GROUP_ORDER } from "@/config/nav";
 import { usePermissions } from "@/lib/rbac/usePermissions";
+import { useCapabilities } from "@/providers/CapabilitiesProvider";
 
 export function NavMenu({
   mode = "inline",
@@ -21,8 +22,11 @@ export function NavMenu({
   const tNav = useTranslations("nav");
   const tGroup = useTranslations("groups");
   const { can } = usePermissions();
+  const capabilities = useCapabilities();
 
-  const visibleItems = NAV_ITEMS.filter((item) => can(item.permission));
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => can(item.permission) && (!item.feature || capabilities[item.feature]),
+  );
 
   const toMenuItem = (item: (typeof NAV_ITEMS)[number]) => ({
     key: item.path,

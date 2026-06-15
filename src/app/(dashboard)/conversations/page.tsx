@@ -98,7 +98,7 @@ export default function ConversationsPage() {
         }
       >
         {current && (
-          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <Space orientation="vertical" size="middle" style={{ width: "100%" }}>
             {current.messages.map((m) => (
               <Flex
                 key={m.id}

@@ -2,6 +2,8 @@ import type { Permission, Role } from "@/lib/rbac/permissions";
 import { isPermission } from "@/lib/rbac/permissions";
 
 const CODE_TO_FRONTEND: Record<string, Role> = {
+  DEV: "DEV",
+  dev: "DEV",
   SUPER_ADMIN: "SUPER_ADMIN",
   ADMIN: "ADMIN",
   CATALOG_MANAGER: "CATALOG_MANAGER",

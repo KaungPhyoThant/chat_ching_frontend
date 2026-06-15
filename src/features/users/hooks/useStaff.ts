@@ -6,9 +6,11 @@ import {
   deleteUser,
   getStaff,
   updateUser,
+  updateUserStatus,
   type CreateStaffPayload,
   type UpdateStaffPayload,
 } from "../api/users-api";
+import type { StaffUser } from "../types";
 
 export const staffQueryKeys = {
   list: ["staff"] as const,
@@ -33,6 +35,17 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateStaffPayload }) =>
       updateUser(id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: staffQueryKeys.list });
+    },
+  });
+}
+
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: StaffUser["status"] }) =>
+      updateUserStatus(id, status),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: staffQueryKeys.list });
     },

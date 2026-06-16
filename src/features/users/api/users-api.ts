@@ -10,16 +10,18 @@ export interface CreateStaffPayload {
   fullName: string;
   employeeId?: string;
   email: string;
+  phone?: string | null;
   role: string;
-  department?: string;
+  department?: string | null;
 }
 
 export interface UpdateStaffPayload {
   fullName?: string;
   employeeId?: string;
   email?: string;
+  phone?: string | null;
   role?: string;
-  department?: string;
+  department?: string | null;
 }
 
 export async function createUser(payload: CreateStaffPayload): Promise<StaffUser> {

@@ -13,8 +13,11 @@ export interface StaffUser {
   fullName: string;
   employeeId: string;
   email: string;
+  phone?: string | null;
   role: string;
-  department: string;
+  department?: string | null;
   status: StaffStatus;
+  createdAt?: string;
+  updatedAt?: string;
   schedules?: DoctorSchedule[];
 }

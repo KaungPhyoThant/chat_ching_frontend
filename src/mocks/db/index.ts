@@ -11,8 +11,6 @@ import type { Order, OrderStatus } from "@/features/orders/types";
 import type { Promotion } from "@/features/promotions/types";
 import type { Broadcast } from "@/features/broadcasts/types";
 import type { Conversation } from "@/features/conversations/types";
-import type { StaffUser } from "@/features/users/types";
-import type { RbacPermission, RbacRole } from "@/features/rbac/types";
 import type { AuditEntry } from "@/features/audit/api/audit-api";
 import type { AppNotification } from "@/features/notifications/data";
 import { MOCK_NOTIFICATIONS } from "@/features/notifications/data";
@@ -199,52 +197,20 @@ const conversationSeed: Conversation[] = Array.from({ length: 9 }, (_, i) => {
   };
 });
 
-// ---------- Staff users ----------
-const staffSeed: StaffUser[] = [
-  { id: "usr_1", fullName: "System Administrator", employeeId: "EMP-0000001", email: "admin@example.com", role: "SUPER_ADMIN", department: "Operations", status: "ACTIVE" },
-  { id: "usr_2", fullName: "Catalog Manager", employeeId: "EMP-CAT001", email: "catalog@example.com", role: "CATALOG_MANAGER", department: "Catalog", status: "ACTIVE" },
-  { id: "usr_3", fullName: "Order Manager", employeeId: "EMP-ORD001", email: "orders@example.com", role: "ORDER_MANAGER", department: "Fulfillment", status: "ACTIVE" },
-  { id: "usr_4", fullName: "Support Agent", employeeId: "EMP-SUP001", email: "support@example.com", role: "SUPPORT_AGENT", department: "Customer Support", status: "ACTIVE" },
-  { id: "usr_5", fullName: "Nilar (Support)", employeeId: "EMP-SUP002", email: "nilar@example.com", role: "SUPPORT_AGENT", department: "Customer Support", status: "PENDING" },
-];
-
-// ---------- RBAC ----------
-const permissionSeed: RbacPermission[] = RBAC_MODULES.flatMap((m) =>
-  CRUD_COLUMNS.map((c) => ({
-    id: `perm_${m.module}_${c.action}`,
-    key: `${m.module}:${c.action}`,
-    module: m.module,
-    action: c.action,
-    resource: m.label,
-  })),
-);
-
-const ROLE_META: { code: string; name: string; description: string; modules: string[] | "all" }[] = [
-  { code: "SUPER_ADMIN", name: "Super Admin", description: "Full system access", modules: "all" },
-  { code: "ADMIN", name: "Admin", description: "Catalog, orders, customers, promotions, staff", modules: ["product", "order", "customer", "promotion", "conversation", "broadcast", "report", "user", "settings"] },
-  { code: "CATALOG_MANAGER", name: "Catalog Manager", description: "Products, categories, inventory", modules: ["product"] },
-  { code: "ORDER_MANAGER", name: "Order Manager", description: "Orders, payments, fulfillment", modules: ["order", "customer", "promotion"] },
-  { code: "SUPPORT_AGENT", name: "Support Agent", description: "Conversations & AI handoffs", modules: ["conversation", "order", "customer"] },
-];
-const roleSeed: RbacRole[] = ROLE_META.map((r, i) => ({
-  id: `role_${i + 1}`,
-  code: r.code,
-  name: r.name,
-  description: r.description,
-  userCount: staffSeed.filter((u) => u.role === r.code).length,
-  permissions:
-    r.modules === "all"
-      ? permissionSeed
-      : permissionSeed.filter((p) => (r.modules as string[]).includes(p.module)),
-}));
-
 // ---------- Audit ----------
 const AUDIT_ACTIONS = ["CREATE", "UPDATE", "DELETE", "LOGIN", "STATUS_CHANGE"];
 const AUDIT_MODULES = ["product", "order", "customer", "promotion", "user", "auth"];
+const AUDIT_USERS = [
+  "System Administrator",
+  "Catalog Manager",
+  "Order Manager",
+  "Support Agent",
+  "Nilar (Support)",
+];
 const auditSeed: AuditEntry[] = Array.from({ length: 14 }, (_, i) => ({
   id: `aud_${i + 1}`,
   time: daysAgo(i / 3),
-  user: staffSeed[i % staffSeed.length].fullName,
+  user: AUDIT_USERS[i % AUDIT_USERS.length],
   action: AUDIT_ACTIONS[i % AUDIT_ACTIONS.length],
   module: AUDIT_MODULES[i % AUDIT_MODULES.length],
   resource: `#${1000 + i}`,
@@ -298,9 +264,6 @@ export const db = {
   promotions: new Collection<Promotion>(promotionSeed),
   broadcasts: new Collection<Broadcast>(broadcastSeed),
   conversations: new Collection<Conversation>(conversationSeed),
-  staff: new Collection<StaffUser>(staffSeed),
-  roles: new Collection<RbacRole>(roleSeed),
-  permissions: new Collection<RbacPermission>(permissionSeed),
   audit: new Collection<AuditEntry>(auditSeed),
   notifications: new Collection<AppNotification>(notificationSeed),
 };

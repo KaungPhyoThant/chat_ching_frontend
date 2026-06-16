@@ -81,6 +81,9 @@ export function AddUserModal({
         <Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
           <Input placeholder="name@example.com" />
         </Form.Item>
+        <Form.Item name="phone" label="Phone number">
+          <Input placeholder="e.g. 09123456789" maxLength={20} />
+        </Form.Item>
         <Form.Item name="role" label="Role" rules={[{ required: true }]}>
           <Select
             options={roleOptions}

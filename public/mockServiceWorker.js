@@ -91,6 +91,16 @@ addEventListener('message', async function (event) {
 addEventListener('fetch', function (event) {
   const requestInterceptedAt = Date.now()
 
+  // Bypass non-HTTP/HTTPS and extension requests to prevent TypeError: Failed to fetch
+  if (
+    (!event.request.url.startsWith('http:') && !event.request.url.startsWith('https:')) ||
+    event.request.url.includes('chrome-extension:') ||
+    event.request.url.includes('moz-extension:') ||
+    event.request.url.includes('safari-web-extension:')
+  ) {
+    return
+  }
+
   // Bypass navigation requests.
   if (event.request.mode === 'navigate') {
     return

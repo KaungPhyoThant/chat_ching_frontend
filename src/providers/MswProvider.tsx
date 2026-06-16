@@ -30,9 +30,24 @@ export function MswProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!ENV.mswEnabled) return;
     let active = true;
-    void startWorkerOnce().then(() => {
-      if (active) setReady(true);
+
+    // Race the worker start against a 1-second timeout
+    const timeoutPromise = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        logger.warn("MSW worker start timed out after 1000ms. Fallbacking to proxy API.");
+        resolve();
+      }, 1000);
     });
+
+    void Promise.race([startWorkerOnce(), timeoutPromise])
+      .then(() => {
+        if (active) setReady(true);
+      })
+      .catch((error) => {
+        logger.error("Failed to start MSW worker:", error);
+        if (active) setReady(true);
+      });
+
     return () => {
       active = false;
     };

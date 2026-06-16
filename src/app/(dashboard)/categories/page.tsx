@@ -52,18 +52,27 @@ export default function CategoriesPage() {
   const nameById = (id: string | null) =>
     id ? (categories.find((c) => c.id === id)?.name ?? "—") : "—";
 
-  const parentOptions = categories
-    .filter((c) => !c.parentId && c.id !== editing?.id)
-    .map((c) => ({ label: c.name, value: c.id }));
+  const TOP_LEVEL = "__top__";
+  const parentOptions = [
+    { label: "— Top-level (no parent) —", value: TOP_LEVEL },
+    ...categories
+      .filter((c) => !c.parentId && c.id !== editing?.id)
+      .map((c) => ({ label: c.name, value: c.id })),
+  ];
 
   const submit = () => {
     form.validateFields().then(async (values) => {
+      const payload = {
+        ...values,
+        parentId:
+          !values.parentId || values.parentId === TOP_LEVEL ? null : values.parentId,
+      };
       try {
         if (editing) {
-          await updateMutation.mutateAsync({ id: editing.id, payload: values });
+          await updateMutation.mutateAsync({ id: editing.id, payload });
           message.success("Category updated");
         } else {
-          await createMutation.mutateAsync(values);
+          await createMutation.mutateAsync(payload);
           message.success("Category created");
         }
         setOpen(false);
@@ -131,8 +140,12 @@ export default function CategoriesPage() {
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>
             <Input placeholder="Category name" />
           </Form.Item>
-          <Form.Item name="parentId" label="Parent category">
-            <Select allowClear options={parentOptions} placeholder="Top-level" />
+          <Form.Item
+            name="parentId"
+            label="Parent category"
+            tooltip="Leave as Top-level to create a main (parent) category. Pick a parent to make it a sub-category."
+          >
+            <Select allowClear options={parentOptions} placeholder="Top-level (parent category)" />
           </Form.Item>
           <Form.Item name="description" label="Description">
             <Input.TextArea rows={2} />

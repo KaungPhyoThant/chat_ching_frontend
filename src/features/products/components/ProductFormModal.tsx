@@ -104,41 +104,47 @@ export function ProductFormModal({ open, onClose, product }: Props) {
   const hasExplicitVariants = showVariants && variants.length > 0;
 
   const handleOk = () => {
-    form.validateFields().then(async (values) => {
-      // When the product has no explicit variants, keep a single default
-      // variant so base price/stock/tiers always live on a variant.
-      const defaultVariant: ProductVariant = {
-        id: product?.variants?.[0]?.id ?? uid("var"),
-        productId: product?.id ?? "",
-        sku: values.sku,
-        optionValueIds: [],
-        price: Number(values.price ?? 0),
-        stock: Number(values.stock ?? 0),
-        isActive: true,
-        tiers: showTiered ? baseTiers : [],
-      };
-      const payload: Partial<Product> = {
-        ...values,
-        images,
-        variants: hasExplicitVariants ? variants : [defaultVariant],
-        hasVariants: hasExplicitVariants,
-        optionTypes: showVariants ? optionTypes : [],
-        ...(showMultiCurrency ? { baseCurrency } : {}),
-        ...(showAttributes ? { attributes: textToAttributes(attributesText) } : {}),
-      };
-      try {
-        if (isEdit && product) {
-          await updateMutation.mutateAsync({ id: product.id, payload });
-          message.success("Product updated");
-        } else {
-          await createMutation.mutateAsync(payload);
-          message.success("Product created");
+    form
+      .validateFields()
+      .then(async (values) => {
+        // When the product has no explicit variants, keep a single default
+        // variant so base price/stock/tiers always live on a variant.
+        const defaultVariant: ProductVariant = {
+          id: product?.variants?.[0]?.id ?? uid("var"),
+          productId: product?.id ?? "",
+          sku: values.sku,
+          optionValueIds: [],
+          price: Number(values.price ?? 0),
+          stock: Number(values.stock ?? 0),
+          isActive: true,
+          tiers: showTiered ? baseTiers : [],
+        };
+        const payload: Partial<Product> = {
+          ...values,
+          images,
+          variants: hasExplicitVariants ? variants : [defaultVariant],
+          hasVariants: hasExplicitVariants,
+          optionTypes: showVariants ? optionTypes : [],
+          ...(showMultiCurrency ? { baseCurrency } : {}),
+          ...(showAttributes ? { attributes: textToAttributes(attributesText) } : {}),
+        };
+        try {
+          if (isEdit && product) {
+            await updateMutation.mutateAsync({ id: product.id, payload });
+            message.success("Product updated");
+          } else {
+            await createMutation.mutateAsync(payload);
+            message.success("Product created");
+          }
+          onClose();
+        } catch {
+          message.error("Failed to save product");
         }
-        onClose();
-      } catch {
-        message.error("Failed to save product");
-      }
-    });
+      })
+      .catch(() => {
+        // Validation errors are displayed inline under each input by Ant Design.
+        // We catch here to prevent Next.js unhandledRejection error overlays.
+      });
   };
 
   const generalTab = (
@@ -253,6 +259,7 @@ export function ProductFormModal({ open, onClose, product }: Props) {
       <Upload
         listType="picture-card"
         accept="image/*"
+        multiple
         fileList={uploadFileList}
         beforeUpload={(file) => {
           const reader = new FileReader();

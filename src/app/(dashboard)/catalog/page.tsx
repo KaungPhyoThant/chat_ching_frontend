@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { App, Avatar, Button, Carousel, Input, Modal, Popconfirm, Space, Tag } from "antd";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { App, Avatar, Button, Input, Modal, Popconfirm, Space, Tag } from "antd";
+import { EditOutlined, DeleteOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CreateButton } from "@/components/ui/CreateButton";
@@ -34,6 +34,7 @@ export default function CatalogPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [gallery, setGallery] = useState<Product | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const filtered = useMemo(
     () =>
@@ -164,23 +165,76 @@ export default function CatalogPage() {
         open={!!gallery}
         title={gallery?.name}
         footer={null}
-        width={420}
-        onCancel={() => setGallery(null)}
-        destroyOnHidden
+        width={720}
+        onCancel={() => {
+          setGallery(null);
+          setActiveImageIndex(0);
+        }}
+        forceRender
       >
-        {gallery && (
-          <Carousel arrows adaptiveHeight draggable>
-            {gallery.images.map((src, i) => (
-              <div key={i}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={src}
-                  alt={`${gallery.name} ${i + 1}`}
-                  style={{ width: "100%", borderRadius: 8, objectFit: "cover" }}
+        {gallery && gallery.images.length > 0 && (
+          <div style={{ position: "relative", width: "100%", textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400, background: "#f5f5f5", borderRadius: 8, overflow: "hidden" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={gallery.images[activeImageIndex]}
+                alt={`${gallery.name} ${activeImageIndex + 1}`}
+                style={{ maxWidth: "100%", maxHeight: 600, objectFit: "contain" }}
+              />
+            </div>
+
+            {gallery.images.length > 1 && (
+              <>
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={<LeftOutlined style={{ fontSize: 20 }} />}
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: 16,
+                    transform: "translateY(-50%)",
+                    background: "rgba(255,255,255,0.8)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  }}
+                  onClick={() => setActiveImageIndex((prev) => (prev === 0 ? gallery.images.length - 1 : prev - 1))}
                 />
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={<RightOutlined style={{ fontSize: 20 }} />}
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: 16,
+                    transform: "translateY(-50%)",
+                    background: "rgba(255,255,255,0.8)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  }}
+                  onClick={() => setActiveImageIndex((prev) => (prev === gallery.images.length - 1 ? 0 : prev + 1))}
+                />
+              </>
+            )}
+
+            {gallery.images.length > 1 && (
+              <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 6 }}>
+                {gallery.images.map((_, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: idx === activeImageIndex ? "#1677FF" : "#d9d9d9",
+                      cursor: "pointer",
+                      transition: "all 0.3s",
+                    }}
+                  />
+                ))}
               </div>
-            ))}
-          </Carousel>
+            )}
+          </div>
         )}
       </Modal>
     </>

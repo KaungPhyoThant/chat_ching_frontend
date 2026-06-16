@@ -7,4 +7,5 @@ export interface Category {
   isActive: boolean;
   sortOrder: number;
   productCount: number;
+  childrenCount: number;
 }

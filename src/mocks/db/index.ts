@@ -19,30 +19,44 @@ import type { Capabilities } from "@/features/capabilities/types";
 import type { CustomerGroup, PriceList } from "@/features/pricing/types";
 
 // ---------- Categories ----------
-const categorySeed: Category[] = [
-  { id: "cat_electronics", parentId: null, name: "Electronics", slug: "electronics", isActive: true, sortOrder: 1, productCount: 0, description: "Phones, laptops and gadgets" },
-  { id: "cat_phones", parentId: "cat_electronics", name: "Phones", slug: "phones", isActive: true, sortOrder: 1, productCount: 0 },
-  { id: "cat_laptops", parentId: "cat_electronics", name: "Laptops", slug: "laptops", isActive: true, sortOrder: 2, productCount: 0 },
-  { id: "cat_fashion", parentId: null, name: "Fashion", slug: "fashion", isActive: true, sortOrder: 2, productCount: 0, description: "Clothing & accessories" },
-  { id: "cat_men", parentId: "cat_fashion", name: "Men", slug: "men", isActive: true, sortOrder: 1, productCount: 0 },
-  { id: "cat_women", parentId: "cat_fashion", name: "Women", slug: "women", isActive: true, sortOrder: 2, productCount: 0 },
-  { id: "cat_home", parentId: null, name: "Home & Living", slug: "home-living", isActive: true, sortOrder: 3, productCount: 0 },
-  { id: "cat_beauty", parentId: null, name: "Beauty", slug: "beauty", isActive: false, sortOrder: 4, productCount: 0 },
-];
+const categorySeed: Category[] = [];
 
-const PRODUCT_NAMES: Record<string, string[]> = {
-  cat_phones: ["Galaxy A55", "iPhone 15", "Redmi Note 13", "Pixel 8"],
-  cat_laptops: ["MacBook Air M3", "ThinkPad X1", "Asus Zenbook", "Dell XPS 13"],
-  cat_men: ["Cotton Polo Shirt", "Slim Jeans", "Leather Belt", "Canvas Sneakers"],
-  cat_women: ["Summer Dress", "Silk Scarf", "Tote Bag", "Ankle Boots"],
-  cat_home: ["Ceramic Mug Set", "LED Desk Lamp", "Throw Blanket", "Wall Clock"],
-  cat_beauty: ["Vitamin C Serum", "Matte Lipstick", "Sheet Mask Pack"],
-};
+const PRODUCT_GROUPS = [
+  {
+    categoryId: "cat_phones",
+    categoryName: "Phones",
+    names: ["Galaxy A55", "iPhone 15", "Redmi Note 13", "Pixel 8"],
+  },
+  {
+    categoryId: "cat_laptops",
+    categoryName: "Laptops",
+    names: ["MacBook Air M3", "ThinkPad X1", "Asus Zenbook", "Dell XPS 13"],
+  },
+  {
+    categoryId: "cat_men",
+    categoryName: "Men",
+    names: ["Cotton Polo Shirt", "Slim Jeans", "Leather Belt", "Canvas Sneakers"],
+  },
+  {
+    categoryId: "cat_women",
+    categoryName: "Women",
+    names: ["Summer Dress", "Silk Scarf", "Tote Bag", "Ankle Boots"],
+  },
+  {
+    categoryId: "cat_home",
+    categoryName: "Home & Living",
+    names: ["Ceramic Mug Set", "LED Desk Lamp", "Throw Blanket", "Wall Clock"],
+  },
+  {
+    categoryId: "cat_beauty",
+    categoryName: "Beauty",
+    names: ["Vitamin C Serum", "Matte Lipstick", "Sheet Mask Pack"],
+  },
+];
 
 const productSeed: Product[] = [];
 let pIdx = 0;
-for (const [categoryId, names] of Object.entries(PRODUCT_NAMES)) {
-  const category = categorySeed.find((c) => c.id === categoryId)!;
+for (const { categoryId, categoryName, names } of PRODUCT_GROUPS) {
   for (const name of names) {
     pIdx += 1;
     const price = 9_000 + pIdx * 7_500;
@@ -50,10 +64,10 @@ for (const [categoryId, names] of Object.entries(PRODUCT_NAMES)) {
     productSeed.push({
       id: `prd_${pIdx}`,
       categoryId,
-      categoryName: category.name,
+      categoryName,
       sku: `SKU-${String(pIdx).padStart(4, "0")}`,
       name,
-      description: `${name} — quality ${category.name.toLowerCase()} item.`,
+      description: `${name} - quality ${categoryName.toLowerCase()} item.`,
       price,
       stock,
       images: [`https://picsum.photos/seed/prd${pIdx}/320/320`],
@@ -78,10 +92,6 @@ for (const [categoryId, names] of Object.entries(PRODUCT_NAMES)) {
     });
   }
 }
-for (const c of categorySeed) {
-  c.productCount = productSeed.filter((p) => p.categoryId === c.id).length;
-}
-
 // ---------- Customers ----------
 const CUSTOMER_NAMES = [
   "Aung Kyaw", "Hla Hla", "Su Su", "Min Thant", "Nilar Win", "Kyaw Zaw",

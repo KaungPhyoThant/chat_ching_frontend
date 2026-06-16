@@ -14,8 +14,9 @@ import {
   Switch,
   Tag,
 } from "antd";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
+import type { ApiError } from "@/lib/api/client";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CreateButton } from "@/components/ui/CreateButton";
 import { ContentCard } from "@/components/ui/ContentCard";
@@ -27,6 +28,8 @@ import {
   useUpdateCategory,
 } from "@/features/categories/hooks/useCategories";
 import type { Category } from "@/features/categories/types";
+
+const TOP_LEVEL = "__top__";
 
 export default function CategoriesPage() {
   const { message } = App.useApp();
@@ -42,22 +45,28 @@ export default function CategoriesPage() {
   useEffect(() => {
     if (!open) return;
     if (editing) {
-      form.setFieldsValue(editing);
+      form.setFieldsValue({
+        ...editing,
+        parentId: editing.parentId ?? TOP_LEVEL,
+      });
     } else {
       form.resetFields();
-      form.setFieldsValue({ isActive: true, sortOrder: 1 });
+      form.setFieldsValue({
+        parentId: TOP_LEVEL,
+        isActive: true,
+        sortOrder: 1,
+      });
     }
   }, [open, editing, form]);
 
   const nameById = (id: string | null) =>
-    id ? (categories.find((c) => c.id === id)?.name ?? "—") : "—";
+    id ? (categories.find((c) => c.id === id)?.name ?? "-") : "-";
 
-  const TOP_LEVEL = "__top__";
   const parentOptions = [
-    { label: "— Top-level (no parent) —", value: TOP_LEVEL },
+    { label: "- Main category -", value: TOP_LEVEL },
     ...categories
-      .filter((c) => !c.parentId && c.id !== editing?.id)
-      .map((c) => ({ label: c.name, value: c.id })),
+      .filter((category) => !category.parentId && category.id !== editing?.id)
+      .map((category) => ({ label: category.name, value: category.id })),
   ];
 
   const submit = () => {
@@ -65,8 +74,11 @@ export default function CategoriesPage() {
       const payload = {
         ...values,
         parentId:
-          !values.parentId || values.parentId === TOP_LEVEL ? null : values.parentId,
+          !values.parentId || values.parentId === TOP_LEVEL
+            ? null
+            : values.parentId,
       };
+
       try {
         if (editing) {
           await updateMutation.mutateAsync({ id: editing.id, payload });
@@ -76,8 +88,9 @@ export default function CategoriesPage() {
           message.success("Category created");
         }
         setOpen(false);
-      } catch {
-        message.error("Failed to save category");
+      } catch (err) {
+        const error = err as ApiError;
+        message.error(error.message || "Failed to save category");
       }
     });
   };
@@ -86,29 +99,60 @@ export default function CategoriesPage() {
     try {
       await deleteMutation.mutateAsync(id);
       message.success("Category deleted");
-    } catch {
-      message.error("Category has products and cannot be deleted");
+    } catch (err) {
+      const error = err as ApiError;
+      message.error(error.message || "Category cannot be deleted");
     }
   };
 
   const columns: ColumnsType<Category> = [
-    { title: "Name", dataIndex: "name", render: (v: string) => <strong>{v}</strong> },
-    { title: "Parent", dataIndex: "parentId", render: (v: string | null) => nameById(v) },
+    {
+      title: "Name",
+      dataIndex: "name",
+      render: (value: string) => <strong>{value}</strong>,
+    },
+    {
+      title: "Type",
+      dataIndex: "parentId",
+      render: (value: string | null) =>
+        value ? (
+          <Tag color="blue">Sub category</Tag>
+        ) : (
+          <Tag color="purple">Main category</Tag>
+        ),
+    },
+    {
+      title: "Parent",
+      dataIndex: "parentId",
+      render: (value: string | null) => nameById(value),
+    },
     { title: "Slug", dataIndex: "slug" },
     { title: "Products", dataIndex: "productCount", align: "center" },
+    { title: "Sub categories", dataIndex: "childrenCount", align: "center" },
     {
       title: "Status",
       dataIndex: "isActive",
-      render: (a: boolean) => (a ? <Tag color="green">Active</Tag> : <Tag>Hidden</Tag>),
+      render: (active: boolean) =>
+        active ? <Tag color="green">Active</Tag> : <Tag>Hidden</Tag>,
     },
     {
       title: "",
       key: "actions",
       align: "right",
-      render: (_, c) => (
+      render: (_, category) => (
         <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => { setEditing(c); setOpen(true); }} />
-          <Popconfirm title="Delete this category?" onConfirm={() => remove(c.id)}>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditing(category);
+              setOpen(true);
+            }}
+          />
+          <Popconfirm
+            title="Delete this category?"
+            onConfirm={() => remove(category.id)}
+          >
             <Button type="text" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
@@ -121,10 +165,24 @@ export default function CategoriesPage() {
       <PageHeader
         title="Categories"
         subtitle="Organize products into a category tree"
-        actions={<CreateButton onClick={() => { setEditing(null); setOpen(true); }}>Add category</CreateButton>}
+        actions={
+          <CreateButton
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
+            Add category
+          </CreateButton>
+        }
       />
       <ContentCard>
-        <DataTable<Category> rowKey="id" loading={isLoading} columns={columns} dataSource={categories} />
+        <DataTable<Category>
+          rowKey="id"
+          loading={isLoading}
+          columns={columns}
+          dataSource={categories}
+        />
       </ContentCard>
 
       <Modal
@@ -143,9 +201,13 @@ export default function CategoriesPage() {
           <Form.Item
             name="parentId"
             label="Parent category"
-            tooltip="Leave as Top-level to create a main (parent) category. Pick a parent to make it a sub-category."
+            tooltip="Leave as Main category for a top-level category. Pick a parent to make it a subcategory."
           >
-            <Select allowClear options={parentOptions} placeholder="Top-level (parent category)" />
+            <Select
+              allowClear
+              options={parentOptions}
+              placeholder="Main category"
+            />
           </Form.Item>
           <Form.Item name="description" label="Description">
             <Input.TextArea rows={2} />

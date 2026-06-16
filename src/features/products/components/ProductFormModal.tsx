@@ -13,7 +13,9 @@ import {
   Space,
   Switch,
   Tabs,
+  Upload,
 } from "antd";
+import type { UploadFile } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useFeature } from "@/lib/features/useFeature";
@@ -72,6 +74,8 @@ export function ProductFormModal({ open, onClose, product }: Props) {
   const [attributesText, setAttributesText] = useState("");
   const [baseCurrency, setBaseCurrency] = useState<CurrencyCode>("MMK");
   const [baseTiers, setBaseTiers] = useState<PriceTier[]>([]);
+  const [images, setImages] = useState<string[]>([]);
+  const MAX_IMAGES = 10;
 
   useEffect(() => {
     if (!open) return;
@@ -83,6 +87,7 @@ export function ProductFormModal({ open, onClose, product }: Props) {
       setAttributesText(attributesToText(product.attributes));
       setBaseCurrency(product.baseCurrency ?? "MMK");
       setBaseTiers(product.variants?.[0]?.tiers ?? []);
+      setImages(product.images ?? []);
     } else {
       form.resetFields();
       form.setFieldsValue({ isActive: true, stock: 0, price: 0 });
@@ -91,6 +96,7 @@ export function ProductFormModal({ open, onClose, product }: Props) {
       setAttributesText("");
       setBaseCurrency("MMK");
       setBaseTiers([]);
+      setImages([]);
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, product, form]);
@@ -113,6 +119,7 @@ export function ProductFormModal({ open, onClose, product }: Props) {
       };
       const payload: Partial<Product> = {
         ...values,
+        images,
         variants: hasExplicitVariants ? variants : [defaultVariant],
         hasVariants: hasExplicitVariants,
         optionTypes: showVariants ? optionTypes : [],
@@ -231,8 +238,44 @@ export function ProductFormModal({ open, onClose, product }: Props) {
     </Space>
   );
 
+  const uploadFileList: UploadFile[] = images.map((url, i) => ({
+    uid: String(i),
+    name: `image-${i + 1}`,
+    status: "done",
+    url,
+  }));
+
+  const imagesTab = (
+    <div>
+      <div style={{ marginBottom: 12, color: "var(--app-text-muted)" }}>
+        Up to {MAX_IMAGES} images. The first one is the cover.
+      </div>
+      <Upload
+        listType="picture-card"
+        accept="image/*"
+        fileList={uploadFileList}
+        beforeUpload={(file) => {
+          const reader = new FileReader();
+          reader.onload = () =>
+            setImages((prev) =>
+              prev.length < MAX_IMAGES ? [...prev, reader.result as string] : prev,
+            );
+          reader.readAsDataURL(file);
+          return false;
+        }}
+        onRemove={(file) => {
+          setImages((prev) => prev.filter((_, i) => String(i) !== file.uid));
+          return true;
+        }}
+      >
+        {images.length < MAX_IMAGES && <div>+ Upload</div>}
+      </Upload>
+    </div>
+  );
+
   const tabItems = [
     { key: "general", label: "General", children: generalTab },
+    { key: "images", label: "Images", children: imagesTab },
     ...(showVariants
       ? [
           {

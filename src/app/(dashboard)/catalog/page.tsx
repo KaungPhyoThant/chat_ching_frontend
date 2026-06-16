@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { App, Avatar, Button, Input, Popconfirm, Space, Tag } from "antd";
+import { App, Avatar, Button, Carousel, Input, Modal, Popconfirm, Space, Tag } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -33,6 +33,7 @@ export default function CatalogPage() {
   const [categoryId, setCategoryId] = useState<string | undefined>();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [gallery, setGallery] = useState<Product | null>(null);
 
   const filtered = useMemo(
     () =>
@@ -71,7 +72,13 @@ export default function CatalogPage() {
       dataIndex: "name",
       render: (_, p) => (
         <Space>
-          <Avatar shape="square" size={40} src={p.images[0]} />
+          <Avatar
+            shape="square"
+            size={40}
+            src={p.images[0]}
+            style={{ cursor: p.images.length ? "pointer" : "default" }}
+            onClick={() => p.images.length && setGallery(p)}
+          />
           <div>
             <div style={{ fontWeight: 500 }}>{p.name}</div>
             <span style={{ fontSize: 12, color: "var(--app-text-muted)" }}>{p.sku}</span>
@@ -152,6 +159,30 @@ export default function CatalogPage() {
         onClose={() => setModalOpen(false)}
         product={editing}
       />
+
+      <Modal
+        open={!!gallery}
+        title={gallery?.name}
+        footer={null}
+        width={420}
+        onCancel={() => setGallery(null)}
+        destroyOnHidden
+      >
+        {gallery && (
+          <Carousel arrows adaptiveHeight draggable>
+            {gallery.images.map((src, i) => (
+              <div key={i}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`${gallery.name} ${i + 1}`}
+                  style={{ width: "100%", borderRadius: 8, objectFit: "cover" }}
+                />
+              </div>
+            ))}
+          </Carousel>
+        )}
+      </Modal>
     </>
   );
 }

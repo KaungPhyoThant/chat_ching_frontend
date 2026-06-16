@@ -14,7 +14,6 @@ import type { Conversation } from "@/features/conversations/types";
 import type { AuditEntry } from "@/features/audit/api/audit-api";
 import type { AppNotification } from "@/features/notifications/data";
 import { MOCK_NOTIFICATIONS } from "@/features/notifications/data";
-import { CRUD_COLUMNS, RBAC_MODULES } from "@/features/rbac/rbac-modules";
 import { FEATURE_DEFAULTS } from "@/config/feature-defaults";
 import type { Capabilities } from "@/features/capabilities/types";
 import type { CustomerGroup, PriceList } from "@/features/pricing/types";

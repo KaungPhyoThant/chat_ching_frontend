@@ -66,7 +66,7 @@ export function RoleFormModal({ open, role, onClose, onSaved }: RoleFormModalPro
         form.resetFields();
         onClose();
       }}
-      destroyOnHidden
+      forceRender
     >
       <Form form={form} layout="vertical">
         <Form.Item

@@ -96,7 +96,7 @@ export default function BroadcastsPage() {
         onOk={submit}
         onCancel={() => setOpen(false)}
         confirmLoading={createMutation.isPending}
-        destroyOnHidden
+        forceRender
       >
         <Form form={form} layout="vertical" initialValues={{ segment: "All customers" }}>
           <Form.Item name="title" label="Title" rules={[{ required: true }]}>

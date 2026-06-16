@@ -196,7 +196,7 @@ export default function PriceListsPage() {
         onOk={submitCreate}
         onCancel={() => setCreateOpen(false)}
         confirmLoading={createMutation.isPending}
-        destroyOnHidden
+        forceRender
       >
         <Form form={form} layout="vertical" initialValues={{ currency: "MMK", priority: 1, isActive: true }}>
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>

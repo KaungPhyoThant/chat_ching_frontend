@@ -120,7 +120,7 @@ export default function PromotionsPage() {
         onOk={submit}
         onCancel={() => setOpen(false)}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
-        destroyOnHidden
+        forceRender
       >
         <Form form={form} layout="vertical">
           <Form.Item name="code" label="Code" rules={[{ required: true }]}>

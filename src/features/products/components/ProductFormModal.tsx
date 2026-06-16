@@ -325,7 +325,7 @@ export function ProductFormModal({ open, onClose, product }: Props) {
       onCancel={onClose}
       confirmLoading={createMutation.isPending || updateMutation.isPending}
       width={tabItems.length > 1 ? 640 : undefined}
-      destroyOnHidden
+      forceRender
     >
       <Form form={form} layout="vertical">
         <Tabs items={tabItems} />

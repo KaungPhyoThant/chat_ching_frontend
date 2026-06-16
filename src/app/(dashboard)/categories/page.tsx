@@ -192,7 +192,7 @@ export default function CategoriesPage() {
         onOk={submit}
         onCancel={() => setOpen(false)}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
-        destroyOnHidden
+        forceRender
       >
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>

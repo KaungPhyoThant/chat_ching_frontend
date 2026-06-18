@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Form, Input, Segmented, Switch, Tabs, Tag } from "antd";
+import { App, Button, Form, Input, Segmented, Skeleton, Switch, Tabs, Tag } from "antd";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SettingRow } from "@/features/settings/components/SettingRow";
@@ -11,6 +11,10 @@ import {
   useCapabilitiesQuery,
   useUpdateCapabilities,
 } from "@/features/capabilities/hooks/useCapabilities";
+import {
+  useCompanyInfo,
+  useUpdateCompanyInfo,
+} from "@/features/settings/hooks/useCompanyInfo";
 import type { FeatureKey } from "@/features/capabilities/types";
 
 const CAPABILITY_ROWS: { key: FeatureKey; label: string; help: string }[] = [
@@ -39,6 +43,79 @@ function CapabilitiesTab() {
           </SettingRow>
         ))}
       </div>
+    </SettingsTabPanel>
+  );
+}
+
+function CompanyTab() {
+  const t = useTranslations("settings");
+  const { message } = App.useApp();
+  const { data, isLoading } = useCompanyInfo();
+  const update = useUpdateCompanyInfo();
+
+  if (isLoading || !data) {
+    return (
+      <SettingsTabPanel lead={t("companyLead")}>
+        <Skeleton active paragraph={{ rows: 5 }} />
+      </SettingsTabPanel>
+    );
+  }
+
+  return (
+    <SettingsTabPanel
+      lead={t("companyLead")}
+      footer={
+        <Button
+          type="primary"
+          form="settings-company-form"
+          htmlType="submit"
+          loading={update.isPending}
+        >
+          {t("saveCompany")}
+        </Button>
+      }
+    >
+      <Form
+        id="settings-company-form"
+        layout="vertical"
+        requiredMark={false}
+        className="app-settings-rows"
+        initialValues={data}
+        onFinish={async (values) => {
+          try {
+            await update.mutateAsync(values);
+            message.success(t("companySaved"));
+          } catch {
+            message.error(t("companySaveFailed"));
+          }
+        }}
+      >
+        <SettingRow title={t("companyName")} description={t("companyNameHint")}>
+          <Form.Item name="name" noStyle rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow title={t("companyPhone")} description={t("companyPhoneHint")}>
+          <Form.Item name="phone" noStyle>
+            <Input />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow title={t("companyEmail")} description={t("companyEmailHint")}>
+          <Form.Item name="email" noStyle>
+            <Input type="email" />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow title={t("companyAddress")} description={t("companyAddressHint")}>
+          <Form.Item name="address" noStyle>
+            <Input.TextArea rows={2} />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow title={t("companyWebsite")} description={t("companyWebsiteHint")}>
+          <Form.Item name="website" noStyle>
+            <Input />
+          </Form.Item>
+        </SettingRow>
+      </Form>
     </SettingsTabPanel>
   );
 }
@@ -192,6 +269,7 @@ export default function SettingsPage() {
   const { can } = usePermissions();
 
   const items = [
+    { key: "company", label: t("settings.tabCompany"), children: <CompanyTab /> },
     { key: "profile", label: t("settings.tabProfile"), children: <ProfileTab /> },
     {
       key: "preferences",

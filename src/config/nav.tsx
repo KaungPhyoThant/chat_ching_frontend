@@ -5,6 +5,7 @@ import {
   DatabaseOutlined,
   DollarOutlined,
   ShoppingCartOutlined,
+  CarOutlined,
   TeamOutlined,
   MessageOutlined,
   TagsOutlined,
@@ -48,6 +49,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "conversations", labelKey: "conversations", icon: <MessageOutlined />, path: ROUTES.conversations, group: "operations", permission: "conversation:read" },
   { key: "promotions", labelKey: "promotions", icon: <TagsOutlined />, path: ROUTES.promotions, group: "operations", permission: "promotion:read" },
   { key: "broadcasts", labelKey: "broadcasts", icon: <SoundOutlined />, path: ROUTES.broadcasts, group: "operations", permission: "broadcast:read" },
+  { key: "delivery", labelKey: "delivery", icon: <CarOutlined />, path: ROUTES.delivery, group: "operations", permission: "order:read" },
   // Admin
   { key: "reports", labelKey: "reports", icon: <BarChartOutlined />, path: ROUTES.reports, group: "admin", permission: "report:read" },
   { key: "users", labelKey: "users", icon: <UserOutlined />, path: ROUTES.users, group: "admin", permission: "user:manage" },

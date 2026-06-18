@@ -3,7 +3,6 @@ import { fail, ok } from "../envelope";
 import { db } from "../db";
 import { daysAgo } from "../db/store";
 import type { Order, OrderStatus } from "@/features/orders/types";
-import type { Customer } from "@/features/customers/types";
 
 export const commerceHandlers = [
   // ---- Orders ----
@@ -27,24 +26,5 @@ export const commerceHandlers = [
       order.payment = { ...order.payment, status: "REFUNDED" };
     }
     return ok(order as Order);
-  }),
-
-  // ---- Customers ----
-  http.get("/api/customers", () => ok(db.customers.all())),
-
-  http.get("/api/customers/:id", ({ params }) => {
-    const customer = db.customers.find(String(params.id));
-    if (!customer) return fail(404, "Customer not found");
-    const orders = db.orders.all().filter((o) => o.customerId === customer.id);
-    const conversations = db.conversations
-      .all()
-      .filter((c) => c.customerId === customer.id);
-    return ok({ ...customer, orders, conversations });
-  }),
-
-  http.patch("/api/customers/:id", async ({ params, request }) => {
-    const body = (await request.json()) as Partial<Customer>;
-    const updated = db.customers.update(String(params.id), body);
-    return updated ? ok(updated) : fail(404, "Customer not found");
   }),
 ];

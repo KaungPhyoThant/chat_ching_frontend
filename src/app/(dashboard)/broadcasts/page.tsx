@@ -46,8 +46,8 @@ export default function BroadcastsPage() {
 
   const send = async (b: Broadcast) => {
     try {
-      await sendMutation.mutateAsync(b.id);
-      message.success(`"${b.title}" sent`);
+      const result = await sendMutation.mutateAsync(b.id);
+      message.success(`"${b.title}" sent to ${result.recipientCount} customer(s)`);
     } catch {
       message.error("Failed to send broadcast");
     }

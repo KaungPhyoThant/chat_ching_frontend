@@ -16,7 +16,8 @@ import type { AppNotification } from "@/features/notifications/data";
 import { MOCK_NOTIFICATIONS } from "@/features/notifications/data";
 import { FEATURE_DEFAULTS } from "@/config/feature-defaults";
 import type { Capabilities } from "@/features/capabilities/types";
-import type { CompanyInfo } from "@/features/settings/types";
+import type { CompanyInfo, VoucherSettings } from "@/features/settings/types";
+import { DEFAULT_VOUCHER_SETTINGS } from "@/features/settings/voucher-config";
 import type { CustomerGroup, PriceList } from "@/features/pricing/types";
 import type { Region, City, Township } from "@/features/delivery/types";
 
@@ -275,6 +276,9 @@ const companyInfo = {
   } as CompanyInfo,
 };
 
+// ---------- Invoice / voucher settings ----------
+const voucherSettings = { current: { ...DEFAULT_VOUCHER_SETTINGS } as VoucherSettings };
+
 // ---------- Delivery areas (Region → City → Township) ----------
 const regionSeed: Region[] = [
   { id: "reg_ygn", name: "Yangon", deliveryFee: 3000, isActive: true },
@@ -295,6 +299,7 @@ const townshipSeed: Township[] = [
 export const db = {
   capabilities,
   companyInfo,
+  voucherSettings,
   regions: new Collection<Region>(regionSeed),
   cities: new Collection<City>(citySeed),
   townships: new Collection<Township>(townshipSeed),

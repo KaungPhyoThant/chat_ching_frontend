@@ -8,6 +8,7 @@ import { dashboardHandlers } from "./handlers/dashboard";
 import { adminHandlers } from "./handlers/admin";
 import { capabilitiesHandlers } from "./handlers/capabilities";
 import { pricingHandlers } from "./handlers/pricing";
+import { deliveryHandlers } from "./handlers/delivery";
 
 export const handlers = [
   ...authHandlers,
@@ -18,4 +19,5 @@ export const handlers = [
   ...adminHandlers,
   ...capabilitiesHandlers,
   ...pricingHandlers,
+  ...deliveryHandlers,
 ];

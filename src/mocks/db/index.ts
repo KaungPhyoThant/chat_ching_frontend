@@ -17,6 +17,7 @@ import { MOCK_NOTIFICATIONS } from "@/features/notifications/data";
 import { FEATURE_DEFAULTS } from "@/config/feature-defaults";
 import type { Capabilities } from "@/features/capabilities/types";
 import type { CustomerGroup, PriceList } from "@/features/pricing/types";
+import type { Region, City, Township } from "@/features/delivery/types";
 
 // ---------- Categories ----------
 const categorySeed: Category[] = [];
@@ -262,8 +263,28 @@ const priceListSeed: PriceList[] = [
 // ---------- Capabilities (runtime feature flags) ----------
 const capabilities = { current: { ...FEATURE_DEFAULTS } as Capabilities };
 
+// ---------- Delivery areas (Region → City → Township) ----------
+const regionSeed: Region[] = [
+  { id: "reg_ygn", name: "Yangon", deliveryFee: 3000, isActive: true },
+  { id: "reg_mdy", name: "Mandalay", deliveryFee: null, isActive: true },
+];
+const citySeed: City[] = [
+  { id: "city_ygn", regionId: "reg_ygn", name: "Yangon City", deliveryFee: null, isActive: true },
+  { id: "city_insein", regionId: "reg_ygn", name: "Insein", deliveryFee: 1500, isActive: true },
+  { id: "city_mdy", regionId: "reg_mdy", name: "Mandalay City", deliveryFee: 2500, isActive: true },
+];
+const townshipSeed: Township[] = [
+  { id: "tsp_hlaing", cityId: "city_ygn", name: "Hlaing", deliveryFee: 5000, isActive: true },
+  { id: "tsp_kamayut", cityId: "city_ygn", name: "Kamayut", deliveryFee: null, isActive: true },
+  { id: "tsp_insein1", cityId: "city_insein", name: "Insein (1)", deliveryFee: null, isActive: true },
+  { id: "tsp_chanaye", cityId: "city_mdy", name: "Chan Aye Thar Zan", deliveryFee: null, isActive: true },
+];
+
 export const db = {
   capabilities,
+  regions: new Collection<Region>(regionSeed),
+  cities: new Collection<City>(citySeed),
+  townships: new Collection<Township>(townshipSeed),
   customerGroups: new Collection<CustomerGroup>(customerGroupSeed),
   priceLists: new Collection<PriceList>(priceListSeed),
   categories: new Collection<Category>(categorySeed),

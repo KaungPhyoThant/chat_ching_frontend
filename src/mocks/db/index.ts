@@ -268,7 +268,7 @@ const capabilities = { current: { ...FEATURE_DEFAULTS } as Capabilities };
 const companyInfo = {
   current: {
     name: "AI Shop",
-    phone: "+95 9 123 456 789",
+    phones: ["+95 9 123 456 789"],
     email: "hello@aishop.example",
     address: "No. 1, Pyay Road, Yangon, Myanmar",
     website: "https://aishop.example",

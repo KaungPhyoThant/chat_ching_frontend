@@ -1,6 +1,7 @@
 "use client";
 
 import { App, Button, Form, Input, Segmented, Skeleton, Switch, Tabs, Tag } from "antd";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SettingRow } from "@/features/settings/components/SettingRow";
@@ -96,9 +97,46 @@ function CompanyTab() {
           </Form.Item>
         </SettingRow>
         <SettingRow title={t("companyPhone")} description={t("companyPhoneHint")}>
-          <Form.Item name="phone" noStyle>
-            <Input />
-          </Form.Item>
+          <Form.List name="phones">
+            {(fields, { add, remove }) => (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                {fields.map((field) => (
+                  <div key={field.key} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <Form.Item
+                      {...field}
+                      validateTrigger={["onChange", "onBlur"]}
+                      rules={[
+                        {
+                          required: true,
+                          whitespace: true,
+                          message: "Please input a phone number or delete this field.",
+                        },
+                      ]}
+                      noStyle
+                    >
+                      <Input placeholder="Phone number" style={{ flex: 1 }} />
+                    </Form.Item>
+                    {fields.length > 1 && (
+                      <Button
+                        type="text"
+                        danger
+                        onClick={() => remove(field.name)}
+                        icon={<DeleteOutlined />}
+                      />
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  style={{ width: "100%" }}
+                  icon={<PlusOutlined />}
+                >
+                  Add phone number
+                </Button>
+              </div>
+            )}
+          </Form.List>
         </SettingRow>
         <SettingRow title={t("companyEmail")} description={t("companyEmailHint")}>
           <Form.Item name="email" noStyle>

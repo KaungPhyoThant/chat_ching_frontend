@@ -150,10 +150,11 @@ function CompanyTab() {
           <Form.List name="phones">
             {(fields, { add, remove }) => (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                {fields.map((field) => (
-                  <div key={field.key} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {fields.map(({ key, name, ...restField }) => (
+                  <div key={key} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                     <Form.Item
-                      {...field}
+                      {...restField}
+                      name={name}
                       validateTrigger={["onChange", "onBlur"]}
                       rules={[
                         {
@@ -170,7 +171,7 @@ function CompanyTab() {
                       <Button
                         type="text"
                         danger
-                        onClick={() => remove(field.name)}
+                        onClick={() => remove(name)}
                         icon={<DeleteOutlined />}
                       />
                     )}

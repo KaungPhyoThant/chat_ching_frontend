@@ -96,7 +96,9 @@ export function VoucherPreview({
             justifyContent: "space-between",
             alignItems: "flex-start",
             gap: 12,
-            padding: pad,
+            paddingTop: pad,
+            paddingLeft: pad,
+            paddingRight: pad,
             paddingBottom: 10,
           }}
         >
@@ -126,7 +128,15 @@ export function VoucherPreview({
   } else {
     // classic + compact: centered header
     header = (
-      <div style={{ textAlign: "center", padding: pad, paddingBottom: 10 }}>
+      <div
+        style={{
+          textAlign: "center",
+          paddingTop: pad,
+          paddingLeft: pad,
+          paddingRight: pad,
+          paddingBottom: 10,
+        }}
+      >
         {logo && <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>{logo}</div>}
         {s.showCompanyName && (
           <div style={{ fontWeight: 700, fontSize: fs + 5 }}>{company.name}</div>

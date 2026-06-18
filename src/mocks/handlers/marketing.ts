@@ -1,9 +1,8 @@
 import { http } from "msw";
 import { fail, ok } from "../envelope";
 import { db } from "../db";
-import { daysAgo, nextId } from "../db/store";
+import { nextId } from "../db/store";
 import type { Promotion } from "@/features/promotions/types";
-import type { Broadcast } from "@/features/broadcasts/types";
 
 export const marketingHandlers = [
   // ---- Promotions ----
@@ -39,41 +38,7 @@ export const marketingHandlers = [
     return removed ? ok(removed) : fail(404, "Promotion not found");
   }),
 
-  // ---- Broadcasts ----
-  http.get("/api/broadcasts", () => ok(db.broadcasts.all())),
-
-  http.post("/api/broadcasts", async ({ request }) => {
-    const body = (await request.json()) as Partial<Broadcast>;
-    const broadcast: Broadcast = {
-      id: nextId("bct"),
-      title: body.title ?? "Untitled broadcast",
-      body: body.body ?? "",
-      imageUrl: body.imageUrl,
-      segment: body.segment ?? "All customers",
-      status: body.scheduledAt ? "SCHEDULED" : "DRAFT",
-      recipientCount: 0,
-      scheduledAt: body.scheduledAt,
-      createdAt: daysAgo(0),
-    };
-    db.broadcasts.insert(broadcast);
-    return ok(broadcast);
-  }),
-
-  http.patch("/api/broadcasts/:id", async ({ params, request }) => {
-    const body = (await request.json()) as Partial<Broadcast>;
-    const updated = db.broadcasts.update(String(params.id), body);
-    return updated ? ok(updated) : fail(404, "Broadcast not found");
-  }),
-
-  http.post("/api/broadcasts/:id/send", ({ params }) => {
-    const updated = db.broadcasts.update(String(params.id), {
-      status: "SENT",
-      sentAt: daysAgo(0),
-      recipientCount: 800 + Math.floor(Math.random() * 600),
-    });
-    return updated ? ok(updated) : fail(404, "Broadcast not found");
-  }),
-
-  // Conversations are served by the real backend (MSW bypassed) so the bot's
-  // live chats appear here. See ai-customer-support-backend ConversationsController.
+  // Broadcasts and Conversations are served by the real backend (MSW bypassed)
+  // so the bot's live customers receive broadcasts and chats appear here.
+  // See ai-customer-support-backend Broadcasts/ConversationsController.
 ];

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { App, Button, Drawer, Flex, Segmented, Space, Tag } from "antd";
-import { RobotOutlined, UserOutlined, CustomerServiceOutlined } from "@ant-design/icons";
+import { App, Button, Drawer, Flex, Input, Segmented, Space, Tag } from "antd";
+import { RobotOutlined, UserOutlined, CustomerServiceOutlined, SendOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ContentCard } from "@/components/ui/ContentCard";
@@ -10,6 +10,7 @@ import { DataTable } from "@/components/common/DataTable";
 import { fromNow, formatDateTime } from "@/lib/format";
 import {
   useConversations,
+  useReplyConversation,
   useSetHandoff,
 } from "@/features/conversations/hooks/useConversations";
 import type { Conversation, ConversationMessageRole } from "@/features/conversations/types";
@@ -24,9 +25,11 @@ export default function ConversationsPage() {
   const { message } = App.useApp();
   const { data: conversations = [], isLoading } = useConversations();
   const handoffMutation = useSetHandoff();
+  const replyMutation = useReplyConversation();
 
   const [filter, setFilter] = useState<"all" | "handoff">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   const rows = useMemo(
     () => (filter === "handoff" ? conversations.filter((c) => c.needsHandoff) : conversations),
@@ -40,6 +43,16 @@ export default function ConversationsPage() {
       message.success(c.needsHandoff ? "Returned to bot" : "Escalated to agent");
     } catch {
       message.error("Failed to update conversation");
+    }
+  };
+
+  const sendReply = async () => {
+    if (!current || !replyText.trim()) return;
+    try {
+      await replyMutation.mutateAsync({ id: current.id, text: replyText.trim() });
+      setReplyText("");
+    } catch {
+      message.error("Failed to send reply");
     }
   };
 
@@ -123,6 +136,29 @@ export default function ConversationsPage() {
                 </div>
               </Flex>
             ))}
+
+            {current.needsHandoff ? (
+              <Space.Compact style={{ width: "100%", marginTop: 8 }}>
+                <Input
+                  placeholder="Type a reply to the customer…"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onPressEnter={sendReply}
+                />
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  loading={replyMutation.isPending}
+                  onClick={sendReply}
+                >
+                  Send
+                </Button>
+              </Space.Compact>
+            ) : (
+              <Tag color="blue" style={{ marginTop: 8 }}>
+                Bot is handling — escalate to reply as an agent
+              </Tag>
+            )}
           </Space>
         )}
       </Drawer>

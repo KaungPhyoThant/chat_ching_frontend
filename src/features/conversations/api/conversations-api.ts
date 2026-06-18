@@ -21,3 +21,14 @@ export async function setHandoff(
   );
   return data;
 }
+
+export async function replyToConversation(
+  id: string,
+  text: string,
+): Promise<Conversation> {
+  const { data } = await apiClient.post<Conversation>(
+    `/conversations/${id}/reply`,
+    { text },
+  );
+  return data;
+}

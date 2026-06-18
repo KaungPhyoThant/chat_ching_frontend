@@ -27,6 +27,14 @@ export async function updateProduct(
   return data;
 }
 
+export async function adjustProductStock(
+  id: string,
+  stock: number,
+): Promise<Product> {
+  const { data } = await apiClient.patch<Product>(`/products/${id}`, { stock });
+  return data;
+}
+
 export async function deleteProduct(id: string): Promise<Product> {
   const { data } = await apiClient.delete<Product>(`/products/${id}`);
   return data;

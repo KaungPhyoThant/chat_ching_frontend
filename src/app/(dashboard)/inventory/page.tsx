@@ -1,12 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { App, Button, InputNumber, Modal, Segmented, Space, Tag } from "antd";
+import {
+  App,
+  Button,
+  InputNumber,
+  Modal,
+  Segmented,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { DataTable } from "@/components/common/DataTable";
-import { useProducts, useUpdateProduct } from "@/features/products/hooks/useProducts";
+import {
+  useAdjustProductStock,
+  useProducts,
+} from "@/features/products/hooks/useProducts";
 import type { Product } from "@/features/products/types";
 
 type StockFilter = "all" | "low" | "out";
@@ -14,7 +26,7 @@ type StockFilter = "all" | "low" | "out";
 export default function InventoryPage() {
   const { message } = App.useApp();
   const { data: products = [], isLoading } = useProducts();
-  const updateMutation = useUpdateProduct();
+  const adjustStockMutation = useAdjustProductStock();
 
   const [filter, setFilter] = useState<StockFilter>("all");
   const [editing, setEditing] = useState<Product | null>(null);
@@ -30,10 +42,17 @@ export default function InventoryPage() {
     [products, filter],
   );
 
+  const openAdjustment = (product: Product) => {
+    setEditing(product);
+    setStock(product.stock);
+  };
+
+  const isStockInvalid = !Number.isInteger(stock) || stock < 0;
+
   const save = async () => {
-    if (!editing) return;
+    if (!editing || isStockInvalid) return;
     try {
-      await updateMutation.mutateAsync({ id: editing.id, payload: { stock } });
+      await adjustStockMutation.mutateAsync({ id: editing.id, stock });
       message.success(`Stock updated for ${editing.name}`);
       setEditing(null);
     } catch {
@@ -51,14 +70,20 @@ export default function InventoryPage() {
       align: "center",
       sorter: (a, b) => a.stock - b.stock,
       render: (s: number) =>
-        s === 0 ? <Tag color="red">0</Tag> : s < 10 ? <Tag color="orange">{s}</Tag> : <Tag color="green">{s}</Tag>,
+        s === 0 ? (
+          <Tag color="red">0</Tag>
+        ) : s < 10 ? (
+          <Tag color="orange">{s}</Tag>
+        ) : (
+          <Tag color="green">{s}</Tag>
+        ),
     },
     {
       title: "",
       key: "actions",
       align: "right",
       render: (_, p) => (
-        <Button size="small" onClick={() => { setEditing(p); setStock(p.stock); }}>
+        <Button size="small" onClick={() => openAdjustment(p)}>
           Adjust
         </Button>
       ),
@@ -83,18 +108,37 @@ export default function InventoryPage() {
           </Space>
         }
       >
-        <DataTable<Product> rowKey="id" loading={isLoading} columns={columns} dataSource={rows} />
+        <DataTable<Product>
+          rowKey="id"
+          loading={isLoading}
+          columns={columns}
+          dataSource={rows}
+        />
       </ContentCard>
 
       <Modal
         open={!!editing}
-        title={`Adjust stock — ${editing?.name ?? ""}`}
+        title={`Adjust stock - ${editing?.name ?? ""}`}
         okText="Save"
         onOk={save}
         onCancel={() => setEditing(null)}
-        confirmLoading={updateMutation.isPending}
+        okButtonProps={{ disabled: isStockInvalid }}
+        confirmLoading={adjustStockMutation.isPending}
       >
-        <InputNumber min={0} value={stock} onChange={(v) => setStock(v ?? 0)} style={{ width: "100%" }} autoFocus />
+        <Space direction="vertical" size="small" style={{ width: "100%" }}>
+          <Typography.Text type="secondary">
+            Current stock: {editing?.stock ?? 0}
+          </Typography.Text>
+          <InputNumber
+            min={0}
+            precision={0}
+            value={stock}
+            onChange={(v) => setStock(v ?? 0)}
+            status={isStockInvalid ? "error" : undefined}
+            style={{ width: "100%" }}
+            autoFocus
+          />
+        </Space>
       </Modal>
     </>
   );

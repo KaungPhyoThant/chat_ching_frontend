@@ -74,20 +74,6 @@ export const marketingHandlers = [
     return updated ? ok(updated) : fail(404, "Broadcast not found");
   }),
 
-  // ---- Conversations ----
-  http.get("/api/conversations", () => ok(db.conversations.all())),
-
-  http.get("/api/conversations/:id", ({ params }) => {
-    const conversation = db.conversations.find(String(params.id));
-    return conversation ? ok(conversation) : fail(404, "Conversation not found");
-  }),
-
-  http.patch("/api/conversations/:id/handoff", async ({ params, request }) => {
-    const { needsHandoff } = (await request.json()) as { needsHandoff: boolean };
-    const updated = db.conversations.update(String(params.id), {
-      needsHandoff,
-      botState: needsHandoff ? "handoff" : "browsing",
-    });
-    return updated ? ok(updated) : fail(404, "Conversation not found");
-  }),
+  // Conversations are served by the real backend (MSW bypassed) so the bot's
+  // live chats appear here. See ai-customer-support-backend ConversationsController.
 ];

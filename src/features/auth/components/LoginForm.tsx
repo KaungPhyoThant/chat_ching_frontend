@@ -73,9 +73,9 @@ export function LoginForm() {
           Sign in
         </Button>
       </Form>
-      <Text type="secondary" style={{ fontSize: 12, textAlign: "center", marginTop: 8 }}>
+      {/* <Text type="secondary" style={{ fontSize: 12, textAlign: "center", marginTop: 8 }}>
         Demo mode — any email & password (8+ chars) signs you in.
-      </Text>
+      </Text> */}
     </Flex>
   );
 }

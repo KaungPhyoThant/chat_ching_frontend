@@ -46,6 +46,18 @@ export function startSession(user: ApiUser = MOCK_API_USER): void {
 
 export function readSession(): ApiUser | null {
   if (typeof localStorage === "undefined") return null;
+
+  // In mock mode, check if the session cookie is present.
+  // If the user cleared cookies manually or if the token is missing, log out.
+  if (typeof document !== "undefined") {
+    const cookies = document.cookie.split(";").map((c) => c.trim());
+    const hasToken = cookies.some((c) => c.startsWith(`${ACCESS_TOKEN_COOKIE}=`));
+    if (!hasToken) {
+      endSession();
+      return null;
+    }
+  }
+
   const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) return null;
   try {

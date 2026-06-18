@@ -34,7 +34,7 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  // Do not redirect /login → /patients based on cookie alone. An expired JWT still
+  // Do not redirect /login → /dashboard based on cookie alone. An expired JWT still
   // leaves the cookie set until logout runs; client GuestGuard redirects after /auth/me succeeds.
 
   if (!session && !isPublicPath(pathname)) {

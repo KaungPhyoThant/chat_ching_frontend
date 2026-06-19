@@ -394,8 +394,16 @@ function LoyaltyTab() {
           </Form.Item>
         </SettingRow>
         <SettingRow title={t("loyaltyEarn")} description={t("loyaltyEarnHint")}>
-          <Form.Item name="earnPointsPer1000" noStyle>
+          <Form.Item name="earnPoints" noStyle>
             <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow
+          title={t("loyaltyPerAmount")}
+          description={t("loyaltyPerAmountHint")}
+        >
+          <Form.Item name="earnPerAmount" noStyle>
+            <InputNumber min={1} step={500} style={{ width: "100%" }} addonBefore="Ks" />
           </Form.Item>
         </SettingRow>
         <SettingRow

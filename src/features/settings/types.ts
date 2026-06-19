@@ -10,7 +10,8 @@ export interface CompanyInfo {
 /** Loyalty point program configuration. */
 export interface LoyaltySettings {
   enabled: boolean;
-  earnPointsPer1000: number;
+  earnPoints: number;
+  earnPerAmount: number;
   redeemValuePerPoint: number;
   minRedeemPoints: number;
 }

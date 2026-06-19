@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   App,
   Button,
+  DatePicker,
   Form,
   Input,
   InputNumber,
@@ -15,6 +16,7 @@ import {
   Tag,
 } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CreateButton } from "@/components/ui/CreateButton";
@@ -42,18 +44,29 @@ export default function PromotionsPage() {
 
   useEffect(() => {
     if (!open) return;
-    if (editing) form.setFieldsValue(editing);
-    else { form.resetFields(); form.setFieldsValue({ type: "PERCENT", isActive: true, value: 10 }); }
+    if (editing) {
+      form.setFieldsValue({
+        ...editing,
+        expiresAt: editing.expiresAt ? dayjs(editing.expiresAt) : null,
+      });
+    } else {
+      form.resetFields();
+      form.setFieldsValue({ type: "PERCENT", isActive: true, value: 10, expiresAt: null });
+    }
   }, [open, editing, form]);
 
   const submit = () => {
     form.validateFields().then(async (values) => {
       try {
+        const payload = {
+          ...values,
+          expiresAt: values.expiresAt ? values.expiresAt.toISOString() : null,
+        };
         if (editing) {
-          await updateMutation.mutateAsync({ id: editing.id, payload: values });
+          await updateMutation.mutateAsync({ id: editing.id, payload });
           message.success("Promotion updated");
         } else {
-          await createMutation.mutateAsync(values);
+          await createMutation.mutateAsync(payload);
           message.success("Promotion created");
         }
         setOpen(false);
@@ -142,6 +155,9 @@ export default function PromotionsPage() {
           </Form.Item>
           <Form.Item name="maxUses" label="Max uses">
             <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item name="expiresAt" label="Expiry Date">
+            <DatePicker showTime style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item name="isActive" label="Active" valuePropName="checked">
             <Switch />

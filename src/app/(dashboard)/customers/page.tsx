@@ -32,7 +32,7 @@ export default function CustomersPage() {
       customers.filter(
         (c) =>
           !search ||
-          c.fullName.toLowerCase().includes(search.toLowerCase()) ||
+          (c.fullName ?? "").toLowerCase().includes(search.toLowerCase()) ||
           (c.username ?? "").toLowerCase().includes(search.toLowerCase()),
       ),
     [customers, search],
@@ -53,8 +53,8 @@ export default function CustomersPage() {
       dataIndex: "fullName",
       render: (_, c) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{c.fullName}</div>
-          <span style={{ fontSize: 12, color: "var(--app-text-muted)" }}>@{c.username}</span>
+          <div style={{ fontWeight: 500 }}>{c.fullName || "Telegram User"}</div>
+          <span style={{ fontSize: 12, color: "var(--app-text-muted)" }}>@{c.username || "no_username"}</span>
         </div>
       ),
     },
@@ -93,7 +93,7 @@ export default function CustomersPage() {
         />
       </ContentCard>
 
-      <Drawer size={520} open={!!selectedId} onClose={() => setSelectedId(null)} title={detail?.fullName}>
+      <Drawer size={520} open={!!selectedId} onClose={() => setSelectedId(null)} title={detail?.fullName || "Telegram User"}>
         {detail && (
           <Space orientation="vertical" size="large" style={{ width: "100%" }}>
             <Descriptions column={1} size="small" bordered>

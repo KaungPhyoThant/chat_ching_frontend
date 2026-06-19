@@ -2,12 +2,10 @@
   "common": {
     "appName": "Chat Ching",
     "register": "Register",
-    "book": "Book appointment",
     "addUser": "Add user",
-    "search": "Search patients, MRN, phone…",
-    "searchAppointments": "Search appointments, patient, doctor…",
+    "search": "Search products, orders, customers…",
     "filterStatus": "Filter status",
-    "globalSearch": "Search patients, appointments, records…",
+    "globalSearch": "Search products, orders, customers…",
     "delete": "Delete",
     "cancel": "Cancel",
     "add": "Add",
@@ -138,36 +136,8 @@
     "toggleSidebar": "Toggle sidebar",
     "openMenu": "Open navigation menu"
   },
-  "appointments": {
-    "subtitle": "Scheduling & queue management"
-  },
-  "patients": {
-    "title": "Patients",
-    "subtitle": "Manage registrations and patient records",
-    "name": "Name / MRN",
-    "phone": "Phone",
-    "gender": "Gender",
-    "status": "Status",
-    "deleteConfirm": "Delete this patient?",
-    "deleted": "Patient deleted"
-  },
   "status": {
     "active": "Active",
     "inactive": "Inactive"
-  },
-  "gender": {
-    "male": "Male",
-    "female": "Female",
-    "other": "Other"
-  },
-  "services": {
-    "categories": {
-      "consultation": "Consultation",
-      "procedure": "Procedure",
-      "investigation": "Investigation",
-      "roomCharge": "Room Charge",
-      "nursingFee": "Nursing Fee",
-      "medicalSupplies": "Medical Supplies"
-    }
   }
 }

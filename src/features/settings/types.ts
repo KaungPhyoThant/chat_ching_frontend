@@ -7,6 +7,14 @@ export interface CompanyInfo {
   website: string;
 }
 
+/** Loyalty point program configuration. */
+export interface LoyaltySettings {
+  enabled: boolean;
+  earnPointsPer1000: number;
+  redeemValuePerPoint: number;
+  minRedeemPoints: number;
+}
+
 /** Printable paper / receipt sizes for invoices & vouchers. */
 export type PaperSize = "A4" | "A5" | "RECEIPT_80" | "RECEIPT_58";
 

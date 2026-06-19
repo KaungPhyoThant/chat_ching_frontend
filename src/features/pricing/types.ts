@@ -5,6 +5,7 @@ export interface CustomerGroup {
   code: string;
   name: string;
   isDefault: boolean;
+  isActive: boolean;
 }
 
 export interface PriceTier {

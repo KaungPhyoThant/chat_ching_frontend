@@ -2,12 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  createCustomerGroup,
   createPriceList,
+  deleteCustomerGroup,
   getCustomerGroups,
   getPriceLists,
+  updateCustomerGroup,
   updatePriceList,
 } from "../api/pricing-api";
-import type { PriceList } from "../types";
+import type { CustomerGroup, PriceList } from "../types";
 
 export const pricingKeys = {
   groups: ["customer-groups"] as const,
@@ -16,6 +19,36 @@ export const pricingKeys = {
 
 export function useCustomerGroups() {
   return useQuery({ queryKey: pricingKeys.groups, queryFn: getCustomerGroups });
+}
+
+export function useCreateCustomerGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<CustomerGroup>) => createCustomerGroup(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: pricingKeys.groups }),
+  });
+}
+
+export function useUpdateCustomerGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<CustomerGroup>;
+    }) => updateCustomerGroup(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: pricingKeys.groups }),
+  });
+}
+
+export function useDeleteCustomerGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteCustomerGroup(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: pricingKeys.groups }),
+  });
 }
 
 export function usePriceLists() {

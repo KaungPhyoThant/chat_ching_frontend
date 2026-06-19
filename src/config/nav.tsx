@@ -7,6 +7,7 @@ import {
   ShoppingCartOutlined,
   CarOutlined,
   TeamOutlined,
+  UsergroupAddOutlined,
   MessageOutlined,
   TagsOutlined,
   SoundOutlined,
@@ -46,6 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
   // Operations
   { key: "orders", labelKey: "orders", icon: <ShoppingCartOutlined />, path: ROUTES.orders, group: "operations", permission: "order:read" },
   { key: "customers", labelKey: "customers", icon: <TeamOutlined />, path: ROUTES.customers, group: "operations", permission: "customer:read" },
+  { key: "customerGroups", labelKey: "customerGroups", icon: <UsergroupAddOutlined />, path: ROUTES.customerGroups, group: "operations", permission: "customer:read", feature: "customerGroups" },
   { key: "conversations", labelKey: "conversations", icon: <MessageOutlined />, path: ROUTES.conversations, group: "operations", permission: "conversation:read" },
   { key: "promotions", labelKey: "promotions", icon: <TagsOutlined />, path: ROUTES.promotions, group: "operations", permission: "promotion:read" },
   { key: "broadcasts", labelKey: "broadcasts", icon: <SoundOutlined />, path: ROUTES.broadcasts, group: "operations", permission: "broadcast:read" },

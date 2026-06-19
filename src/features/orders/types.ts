@@ -39,6 +39,7 @@ export interface Order {
   totalAmount: number;
   promotionCode?: string;
   shippingAddress?: string;
+  cancelReason?: string;
   createdAt: string;
   items: OrderItem[];
   payment: OrderPayment;

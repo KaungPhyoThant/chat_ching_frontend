@@ -14,7 +14,11 @@ export async function getOrder(id: string): Promise<Order> {
 export async function updateOrderStatus(
   id: string,
   status: OrderStatus,
+  cancelReason?: string,
 ): Promise<Order> {
-  const { data } = await apiClient.patch<Order>(`/orders/${id}/status`, { status });
+  const { data } = await apiClient.patch<Order>(`/orders/${id}/status`, {
+    status,
+    cancelReason,
+  });
   return data;
 }

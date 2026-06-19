@@ -5,6 +5,8 @@ import {
   App,
   Descriptions,
   Drawer,
+  Input,
+  Modal,
   Select,
   Space,
   Table,
@@ -39,6 +41,10 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | undefined>();
   const [selected, setSelected] = useState<Order | null>(null);
 
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReasonText, setCancelReasonText] = useState("");
+  const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null);
+
   const rows = useMemo(
     () => (statusFilter ? orders.filter((o) => o.status === statusFilter) : orders),
     [orders, statusFilter],
@@ -47,14 +53,31 @@ export default function OrdersPage() {
   // Keep the open drawer in sync with refreshed data.
   const current = selected ? orders.find((o) => o.id === selected.id) ?? selected : null;
 
-  const changeStatus = async (status: OrderStatus) => {
+  const changeStatus = async (status: OrderStatus, reason?: string) => {
     if (!current) return;
     try {
-      await updateStatus.mutateAsync({ id: current.id, status });
+      await updateStatus.mutateAsync({ id: current.id, status, cancelReason: reason });
       message.success(`Order ${current.orderNo} → ${status}`);
     } catch {
       message.error("Failed to update status");
     }
+  };
+
+  const handleStatusChange = (status: OrderStatus) => {
+    if (status === "CANCELLED") {
+      setPendingStatus(status);
+      setCancelReasonText("");
+      setIsCancelModalOpen(true);
+    } else {
+      changeStatus(status);
+    }
+  };
+
+  const handleCancelSubmit = async () => {
+    if (!pendingStatus || !cancelReasonText.trim()) return;
+    await changeStatus(pendingStatus, cancelReasonText.trim());
+    setIsCancelModalOpen(false);
+    setPendingStatus(null);
   };
 
   const columns: ColumnsType<Order> = [
@@ -116,7 +139,7 @@ export default function OrdersPage() {
                 value={current.status}
                 options={STATUS_OPTIONS}
                 style={{ width: 180 }}
-                onChange={(v) => changeStatus(v)}
+                onChange={(v) => handleStatusChange(v)}
                 loading={updateStatus.isPending}
               />
             </Space>
@@ -129,6 +152,11 @@ export default function OrdersPage() {
               </Descriptions.Item>
               {current.promotionCode && (
                 <Descriptions.Item label="Promo">{current.promotionCode}</Descriptions.Item>
+              )}
+              {current.status === "CANCELLED" && current.cancelReason && (
+                <Descriptions.Item label="Cancel Reason">
+                  <span style={{ color: "#ff4d4f", fontWeight: 500 }}>{current.cancelReason}</span>
+                </Descriptions.Item>
               )}
             </Descriptions>
 
@@ -158,19 +186,49 @@ export default function OrdersPage() {
               )}
             />
 
-            <Timeline
-              items={current.timeline.map((e) => ({
-                children: (
-                  <Space>
-                    <StatusTag status={e.status} />
-                    <span style={{ color: "var(--app-text-muted)" }}>{formatDateTime(e.at)}</span>
-                  </Space>
-                ),
-              }))}
-            />
+             <Timeline
+               items={current.timeline?.map((e) => ({
+                 children: (
+                   <Space direction="vertical" size={2}>
+                     <Space>
+                       <StatusTag status={e.status} />
+                       <span style={{ color: "var(--app-text-muted)" }}>{formatDateTime(e.at)}</span>
+                     </Space>
+                     {e.status === "CANCELLED" && current.cancelReason && (
+                       <div style={{ color: "#ff4d4f", fontSize: "12px", paddingLeft: 4 }}>
+                         Reason: {current.cancelReason}
+                       </div>
+                     )}
+                   </Space>
+                 ),
+               }))}
+             />
           </Space>
         )}
       </Drawer>
+
+      <Modal
+        title="Cancel Order"
+        open={isCancelModalOpen}
+        onOk={handleCancelSubmit}
+        onCancel={() => {
+          setIsCancelModalOpen(false);
+          setPendingStatus(null);
+        }}
+        okText="Cancel Order"
+        okButtonProps={{ danger: true, disabled: !cancelReasonText.trim() }}
+        confirmLoading={updateStatus.isPending}
+      >
+        <div style={{ marginBottom: 16 }}>
+          Please enter the reason for cancelling order <strong>{current?.orderNo}</strong>:
+        </div>
+        <Input.TextArea
+          rows={4}
+          placeholder="Reason for cancellation (required)..."
+          value={cancelReasonText}
+          onChange={(e) => setCancelReasonText(e.target.value)}
+        />
+      </Modal>
     </>
   );
 }

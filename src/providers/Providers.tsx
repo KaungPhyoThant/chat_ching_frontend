@@ -2,7 +2,6 @@
 
 import { App } from "antd";
 import { LocaleHtmlLang } from "@/components/i18n/LocaleHtmlLang";
-import { MswProvider } from "./MswProvider";
 import { QueryProvider } from "./QueryProvider";
 import { IntlProvider } from "./IntlProvider";
 import { ThemeProvider } from "./ThemeProvider";
@@ -11,19 +10,17 @@ import { CapabilitiesProvider } from "./CapabilitiesProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <MswProvider>
-      <QueryProvider>
-        <AuthProvider>
-          <CapabilitiesProvider>
-            <IntlProvider>
-              <LocaleHtmlLang />
-              <ThemeProvider>
-                <App>{children}</App>
-              </ThemeProvider>
-            </IntlProvider>
-          </CapabilitiesProvider>
-        </AuthProvider>
-      </QueryProvider>
-    </MswProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <CapabilitiesProvider>
+          <IntlProvider>
+            <LocaleHtmlLang />
+            <ThemeProvider>
+              <App>{children}</App>
+            </ThemeProvider>
+          </IntlProvider>
+        </CapabilitiesProvider>
+      </AuthProvider>
+    </QueryProvider>
   );
 }

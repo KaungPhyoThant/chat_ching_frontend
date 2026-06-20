@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   App,
+  Button,
   Descriptions,
   Drawer,
   Input,
@@ -13,6 +14,7 @@ import {
   Tag,
   Timeline,
 } from "antd";
+import { PrinterOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ContentCard } from "@/components/ui/ContentCard";
@@ -21,6 +23,9 @@ import { FilterSelect } from "@/components/ui/FilterSelect";
 import { ORDER_STATUS, type OrderStatus } from "@/config/enums";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { useOrders, useUpdateOrderStatus } from "@/features/orders/hooks/useOrders";
+import { useVoucherSettings } from "@/features/settings/hooks/useVoucherSettings";
+import { useCompanyInfo } from "@/features/settings/hooks/useCompanyInfo";
+import { VoucherPreview, type InvoiceData } from "@/features/settings/components/VoucherPreview";
 import type { Order, OrderItem } from "@/features/orders/types";
 
 const STATUS_OPTIONS = (Object.keys(ORDER_STATUS) as OrderStatus[]).map((s) => ({
@@ -52,6 +57,34 @@ export default function OrdersPage() {
 
   // Keep the open drawer in sync with refreshed data.
   const current = selected ? orders.find((o) => o.id === selected.id) ?? selected : null;
+
+  const { data: voucher } = useVoucherSettings();
+  const { data: company } = useCompanyInfo();
+
+  const invoiceData: InvoiceData | undefined = current
+    ? {
+        invoiceNo: current.orderNo,
+        date: formatDate(current.createdAt),
+        customer: {
+          name: current.customerName,
+          phone: "",
+          address: current.shippingAddress ?? "",
+        },
+        paymentMethod: current.payment?.method ?? "",
+        items: current.items.map((i) => ({
+          name: i.productName,
+          qty: i.quantity,
+          price: i.unitPrice,
+        })),
+        discount: current.discountAmount,
+        deliveryFee: Math.max(
+          0,
+          current.totalAmount - current.subtotal + current.discountAmount,
+        ),
+      }
+    : undefined;
+
+  const canPrint = !!(voucher && company && invoiceData);
 
   const changeStatus = async (status: OrderStatus, reason?: string) => {
     if (!current) return;
@@ -133,15 +166,24 @@ export default function OrdersPage() {
       >
         {current && (
           <Space orientation="vertical" size="large" style={{ width: "100%" }}>
-            <Space align="center">
-              <span>Status:</span>
-              <Select
-                value={current.status}
-                options={STATUS_OPTIONS}
-                style={{ width: 180 }}
-                onChange={(v) => handleStatusChange(v)}
-                loading={updateStatus.isPending}
-              />
+            <Space align="center" style={{ justifyContent: "space-between", width: "100%" }}>
+              <Space align="center">
+                <span>Status:</span>
+                <Select
+                  value={current.status}
+                  options={STATUS_OPTIONS}
+                  style={{ width: 180 }}
+                  onChange={(v) => handleStatusChange(v)}
+                  loading={updateStatus.isPending}
+                />
+              </Space>
+              <Button
+                icon={<PrinterOutlined />}
+                disabled={!canPrint}
+                onClick={() => window.print()}
+              >
+                Print invoice
+              </Button>
             </Space>
 
             <Descriptions column={1} size="small" bordered>
@@ -229,6 +271,23 @@ export default function OrdersPage() {
           onChange={(e) => setCancelReasonText(e.target.value)}
         />
       </Modal>
+
+      {/* Printable invoice — hidden on screen, shown only when printing. */}
+      {canPrint && (
+        <div className="invoice-print-area">
+          <VoucherPreview settings={voucher!} company={company!} order={invoiceData} />
+        </div>
+      )}
+      <style>{`
+        .invoice-print-area { display: none; }
+        @media print {
+          body * { visibility: hidden; }
+          .invoice-print-area, .invoice-print-area * { visibility: visible; }
+          .invoice-print-area {
+            display: block; position: absolute; left: 0; top: 0; width: 100%;
+          }
+        }
+      `}</style>
     </>
   );
 }

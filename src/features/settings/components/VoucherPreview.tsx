@@ -5,8 +5,18 @@ import { formatCurrency } from "@/lib/format";
 import { PAPER_SIZES } from "../voucher-config";
 import type { CompanyInfo, VoucherSettings } from "../types";
 
-/** Static sample order used to render the live preview. */
-const SAMPLE = {
+export interface InvoiceData {
+  invoiceNo: string;
+  date: string;
+  customer: { name: string; phone: string; address: string };
+  paymentMethod: string;
+  items: { name: string; qty: number; price: number }[];
+  discount: number;
+  deliveryFee: number;
+}
+
+/** Static sample order used for the live preview when no real order is given. */
+const SAMPLE: InvoiceData = {
   invoiceNo: "INV-2026-0042",
   date: "18 Jun 2026",
   customer: { name: "Daw Hla Hla", phone: "09 700 000 000", address: "Hlaing Tsp, Yangon" },
@@ -23,20 +33,23 @@ const SAMPLE = {
 export function VoucherPreview({
   settings: s,
   company,
+  order,
 }: {
   settings: VoucherSettings;
   company: CompanyInfo;
+  order?: InvoiceData;
 }) {
+  const d = order ?? SAMPLE;
   const width = PAPER_SIZES[s.paperSize].previewWidth;
   const compact = s.layout === "compact" || s.paperSize.startsWith("RECEIPT");
   const fs = compact ? 11 : 13;
   const accent = s.accentColor;
 
-  const subtotal = SAMPLE.items.reduce((sum, it) => sum + it.qty * it.price, 0);
+  const subtotal = d.items.reduce((sum, it) => sum + it.qty * it.price, 0);
   const grandTotal =
     subtotal -
-    (s.showDiscount ? SAMPLE.discount : 0) +
-    (s.showDeliveryFee ? SAMPLE.deliveryFee : 0);
+    (s.showDiscount ? d.discount : 0) +
+    (s.showDeliveryFee ? d.deliveryFee : 0);
 
   const paper: CSSProperties = {
     width,
@@ -119,8 +132,8 @@ export function VoucherPreview({
             <div style={{ fontWeight: 800, fontSize: fs + 6, color: accent, letterSpacing: 1 }}>
               {s.title}
             </div>
-            {s.showInvoiceNo && <div style={{ color: "#6b7280" }}>{SAMPLE.invoiceNo}</div>}
-            {s.showDate && <div style={{ color: "#6b7280" }}>{SAMPLE.date}</div>}
+            {s.showInvoiceNo && <div style={{ color: "#6b7280" }}>{d.invoiceNo}</div>}
+            {s.showDate && <div style={{ color: "#6b7280" }}>{d.date}</div>}
           </div>
         </div>
       </div>
@@ -170,8 +183,8 @@ export function VoucherPreview({
               marginTop: 4,
             }}
           >
-            {s.showInvoiceNo && <span>{SAMPLE.invoiceNo}</span>}
-            {s.showDate && <span>{SAMPLE.date}</span>}
+            {s.showInvoiceNo && <span>{d.invoiceNo}</span>}
+            {s.showDate && <span>{d.date}</span>}
           </div>
         )}
       </div>
@@ -217,9 +230,9 @@ export function VoucherPreview({
             <div style={{ color: "#6b7280", fontSize: fs - 2, textTransform: "uppercase", letterSpacing: 0.5 }}>
               Bill to
             </div>
-            <div style={{ fontWeight: 600 }}>{SAMPLE.customer.name}</div>
-            <div style={{ color: "#6b7280", fontSize: fs - 1 }}>{SAMPLE.customer.phone}</div>
-            <div style={{ color: "#6b7280", fontSize: fs - 1 }}>{SAMPLE.customer.address}</div>
+            <div style={{ fontWeight: 600 }}>{d.customer.name}</div>
+            <div style={{ color: "#6b7280", fontSize: fs - 1 }}>{d.customer.phone}</div>
+            <div style={{ color: "#6b7280", fontSize: fs - 1 }}>{d.customer.address}</div>
           </div>
         )}
 
@@ -233,7 +246,7 @@ export function VoucherPreview({
               </tr>
             </thead>
             <tbody>
-              {SAMPLE.items.map((it) => (
+              {d.items.map((it) => (
                 <tr key={it.name} style={{ borderTop: "1px solid #f0f0f0" }}>
                   <td style={{ padding: "5px 0" }}>{it.name}</td>
                   <td style={{ padding: "5px 0", textAlign: "center" }}>{it.qty}</td>
@@ -248,15 +261,15 @@ export function VoucherPreview({
 
         <div>
           {s.showSubtotal && totalRow("Subtotal", subtotal)}
-          {s.showDiscount && totalRow("Discount", SAMPLE.discount, { sign: "−" })}
-          {s.showDeliveryFee && totalRow("Delivery", SAMPLE.deliveryFee, { sign: "+" })}
+          {s.showDiscount && totalRow("Discount", d.discount, { sign: "−" })}
+          {s.showDeliveryFee && totalRow("Delivery", d.deliveryFee, { sign: "+" })}
           {s.showGrandTotal && totalRow("Total", grandTotal, { strong: true })}
         </div>
 
         {s.showPaymentMethod && (
           <div style={{ marginTop: 10, color: "#374151" }}>
             <span style={{ color: "#6b7280" }}>Payment: </span>
-            {SAMPLE.paymentMethod}
+            {d.paymentMethod}
           </div>
         )}
 

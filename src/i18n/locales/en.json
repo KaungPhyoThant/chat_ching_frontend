@@ -54,7 +54,7 @@
     "tabVoucher": "Invoice / Voucher",
     "tabBot": "Telegram bot",
     "tabLoyalty": "Loyalty points",
-    "botLead": "Connect your Telegram bot. Saving applies the token and registers the webhook automatically — no .env or curl needed.",
+    "botLead": "Connect your Telegram bot",
     "botToken": "Bot token",
     "botTokenHint": "From @BotFather. Kept private.",
     "botPublicUrl": "Public URL",

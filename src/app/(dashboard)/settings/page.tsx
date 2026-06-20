@@ -729,7 +729,6 @@ export default function SettingsPage() {
   const items = [
     { key: "company", label: t("settings.tabCompany"), children: <CompanyTab /> },
     { key: "voucher", label: t("settings.tabVoucher"), children: <VoucherTab /> },
-    { key: "bot", label: t("settings.tabBot"), children: <BotTab /> },
     { key: "loyalty", label: t("settings.tabLoyalty"), children: <LoyaltyTab /> },
     { key: "profile", label: t("settings.tabProfile"), children: <ProfileTab /> },
     {
@@ -740,7 +739,9 @@ export default function SettingsPage() {
     { key: "security", label: t("settings.tabSecurity"), children: <SecurityTab /> },
   ];
 
+  // DEV-only tabs (vendor setup — clients never see these).
   if (can("capabilities:manage")) {
+    items.push({ key: "bot", label: t("settings.tabBot"), children: <BotTab /> });
     items.push({ key: "capabilities", label: "Capabilities", children: <CapabilitiesTab /> });
   }
 

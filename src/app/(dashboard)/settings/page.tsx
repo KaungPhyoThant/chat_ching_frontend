@@ -80,6 +80,7 @@ const CAPABILITY_ROWS: { key: FeatureKey; label: string; help: string }[] = [
   { key: "multiPriceList", label: "Multiple price lists", help: "Per group / currency / season" },
   { key: "multiCurrency", label: "Multi-currency", help: "Sell in more than one currency" },
   { key: "productAttributes", label: "Custom product attributes", help: "Arbitrary key/value fields" },
+  { key: "imageSearch", label: "Image product search", help: "Customers send a photo in the bot to find similar products (uses AI vision)" },
 ];
 
 function CapabilitiesTab() {

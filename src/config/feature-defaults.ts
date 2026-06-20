@@ -7,4 +7,5 @@ export const FEATURE_DEFAULTS: Capabilities = {
   multiPriceList: false,
   multiCurrency: false,
   productAttributes: false,
+  imageSearch: false,
 };

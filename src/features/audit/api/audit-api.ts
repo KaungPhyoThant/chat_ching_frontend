@@ -10,7 +10,30 @@ export interface AuditEntry {
   ip: string;
 }
 
-export async function getAuditLogs(): Promise<AuditEntry[]> {
-  const { data } = await apiClient.get<AuditEntry[]>("/audit-logs");
+export interface AuditQuery {
+  search?: string;
+  module?: string;
+  action?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AuditListResponse {
+  items: AuditEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+  modules: string[];
+  actions: string[];
+}
+
+export async function getAuditLogs(
+  params: AuditQuery = {},
+): Promise<AuditListResponse> {
+  const { data } = await apiClient.get<AuditListResponse>("/audit-logs", {
+    params,
+  });
   return data;
 }

@@ -6,7 +6,7 @@ import { AuditTable } from "@/features/audit/AuditTable";
 export default function AuditLogsPage() {
   return (
     <>
-      <PageHeader title="Audit logs" subtitle="Append-only · PHI access & sensitive actions" />
+      <PageHeader title="Audit logs" subtitle="Append-only · staff sign-ins & sensitive actions" />
       <AuditTable />
     </>
   );

@@ -13,6 +13,7 @@ export const ROUTES = {
   paymentAccounts: "/payment-accounts",
   promotions: "/promotions",
   conversations: "/conversations",
+  feedback: "/feedback",
   broadcasts: "/broadcasts",
   reports: "/reports",
   rbac: "/rbac",

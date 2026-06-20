@@ -54,7 +54,7 @@
     "tabVoucher": "ပြေစာ / Voucher",
     "tabBot": "Telegram bot",
     "tabLoyalty": "Loyalty points",
-    "botLead": "သင့် Telegram bot ချိတ်ပါ။ Save လုပ်တာနဲ့ token သုံးပြီး webhook ကို auto register လုပ်ပေးမယ် — .env / curl မလို။",
+    "botLead": "သင့် Telegram bot ချိတ်ပါ။",
     "botToken": "Bot token",
     "botTokenHint": "@BotFather ကနေ ရတယ်။ လျှို့ဝှက်ထား။",
     "botPublicUrl": "Public URL",

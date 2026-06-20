@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { GlobalMessageListener } from "@/components/notifications/GlobalMessageListener";
 
 export default function DashboardLayout({
   children,
@@ -8,6 +9,7 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthGuard>
+      <GlobalMessageListener />
       <AppShell>{children}</AppShell>
     </AuthGuard>
   );

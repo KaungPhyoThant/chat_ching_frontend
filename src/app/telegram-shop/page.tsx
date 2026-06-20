@@ -36,6 +36,29 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+interface TelegramWebApp {
+  ready: () => void;
+  expand: () => void;
+  close: () => void;
+  initData: string;
+  initDataUnsafe?: {
+    user?: {
+      id: number;
+      first_name: string;
+      last_name?: string;
+      username?: string;
+    };
+  };
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: TelegramWebApp;
+    };
+  }
+}
+
 export default function TelegramShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -54,7 +77,6 @@ export default function TelegramShopPage() {
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [selectedCityId, setSelectedCityId] = useState("");
   const [selectedTownshipId, setSelectedTownshipId] = useState("");
-  const [deliveryFee, setDeliveryFee] = useState(0);
 
   const [paymentMethod, setPaymentMethod] = useState<"KBZPAY" | "WAVEPAY" | "COD">("COD");
   const [proofUrl, setProofUrl] = useState("");
@@ -62,12 +84,14 @@ export default function TelegramShopPage() {
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
 
   // Initialize Telegram WebApp variables
+  const [initData, setInitData] = useState<string>("");
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const tg = (window as any).Telegram?.WebApp;
+      const tg = window.Telegram?.WebApp;
       if (tg) {
         tg.ready();
         tg.expand();
+        if (tg.initData) setInitData(tg.initData);
         const user = tg.initDataUnsafe?.user;
         if (user) {
           setTelegramId(String(user.id));
@@ -90,6 +114,7 @@ export default function TelegramShopPage() {
         const regData = await regRes.json();
         setRegions(regData);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error("Failed to load catalog/delivery data", err);
       } finally {
         setLoading(false);
@@ -99,26 +124,20 @@ export default function TelegramShopPage() {
   }, []);
 
   // Calculate township delivery fee
-  useEffect(() => {
-    if (!selectedTownshipId) {
-      setDeliveryFee(0);
-      return;
-    }
-
+  let deliveryFee = 0;
+  if (selectedTownshipId) {
     const region = regions.find((r) => r.id === selectedRegionId);
     const city = region?.cities.find((c) => c.id === selectedCityId);
     const township = city?.townships.find((t) => t.id === selectedTownshipId);
 
     if (township && township.deliveryFee !== null) {
-      setDeliveryFee(Number(township.deliveryFee));
+      deliveryFee = Number(township.deliveryFee);
     } else if (city && city.deliveryFee !== null) {
-      setDeliveryFee(Number(city.deliveryFee));
+      deliveryFee = Number(city.deliveryFee);
     } else if (region && region.deliveryFee !== null) {
-      setDeliveryFee(Number(region.deliveryFee));
-    } else {
-      setDeliveryFee(0);
+      deliveryFee = Number(region.deliveryFee);
     }
-  }, [selectedTownshipId, selectedCityId, selectedRegionId, regions]);
+  }
 
   // Derived listings
   const categories = ["All", ...Array.from(new Set(products.map((p) => p.category.name)))];
@@ -165,6 +184,7 @@ export default function TelegramShopPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          initData,
           telegramId,
           fullName,
           username,
@@ -182,7 +202,7 @@ export default function TelegramShopPage() {
         setOrderSuccess(data.orderNo);
         setCart([]);
         setTimeout(() => {
-          const tg = (window as any).Telegram?.WebApp;
+          const tg = window.Telegram?.WebApp;
           if (tg) {
             tg.close();
           }
@@ -191,6 +211,7 @@ export default function TelegramShopPage() {
         alert("Checkout failed. Please try again.");
       }
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
       alert("An error occurred during checkout.");
     } finally {
@@ -735,7 +756,7 @@ export default function TelegramShopPage() {
                             className="form-input"
                             required
                             value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value as any)}
+                            onChange={(e) => setPaymentMethod(e.target.value as "KBZPAY" | "WAVEPAY" | "COD")}
                           >
                             <option value="COD">Cash on Delivery (COD)</option>
                             <option value="KBZPAY">KBZPay Transfer</option>

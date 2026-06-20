@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { App, Badge, Button, Drawer, Flex, Input, Segmented, Space, Tag } from "antd";
+import { App, Badge, Button, Drawer, Flex, Input, Segmented, Space, Tag, theme } from "antd";
 import { RobotOutlined, UserOutlined, CustomerServiceOutlined, SendOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -24,6 +24,7 @@ const ROLE_ICON: Record<ConversationMessageRole, React.ReactNode> = {
 
 export default function ConversationsPage() {
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const { data: conversations = [], isLoading } = useConversations();
   const handoffMutation = useSetHandoff();
   const { mutate: markConversationRead } = useMarkConversationRead();
@@ -146,16 +147,17 @@ export default function ConversationsPage() {
                     maxWidth: "78%",
                     padding: "8px 12px",
                     borderRadius: 10,
+                    color: token.colorText,
                     background:
                       m.role === "customer"
-                        ? "var(--app-surface-muted, #f5f5f5)"
-                        : "var(--app-primary-bg, #e6f4ff)",
+                        ? token.colorFillSecondary
+                        : token.colorPrimaryBg,
                   }}
                 >
-                  <Flex gap={6} align="center" style={{ fontSize: 12, color: "var(--app-text-muted)", marginBottom: 2 }}>
+                  <Flex gap={6} align="center" style={{ fontSize: 12, color: token.colorTextSecondary, marginBottom: 2 }}>
                     {ROLE_ICON[m.role]} <span>{m.role}</span> · <span>{formatDateTime(m.at)}</span>
                   </Flex>
-                  <div>{m.text}</div>
+                  <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.text}</div>
                 </div>
               </Flex>
             ))}

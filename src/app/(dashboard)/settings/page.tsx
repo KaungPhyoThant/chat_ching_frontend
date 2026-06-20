@@ -43,6 +43,11 @@ import {
   useUpdateLoyaltySettings,
 } from "@/features/settings/hooks/useLoyaltySettings";
 import {
+  useBotSettings,
+  useUpdateBotSettings,
+} from "@/features/settings/hooks/useBotSettings";
+import type { BotStatus } from "@/features/settings/types";
+import {
   PAPER_SIZE_OPTIONS,
   VOUCHER_LAYOUTS,
 } from "@/features/settings/voucher-config";
@@ -369,6 +374,128 @@ function VoucherTab() {
   );
 }
 
+function BotStatusAlert({ status }: { status?: BotStatus }) {
+  if (!status) return null;
+  if (status.error) {
+    return <Alert type="error" showIcon title="Bot error" description={status.error} />;
+  }
+  if (status.configured && status.username) {
+    return (
+      <Alert
+        type="success"
+        showIcon
+        title={`Connected as @${status.username}`}
+        description={
+          status.webhookUrl
+            ? `Webhook: ${status.webhookUrl} (${status.pendingUpdates ?? 0} pending)`
+            : "Token saved, but no webhook is set yet — add a public URL and save."
+        }
+      />
+    );
+  }
+  return <Alert type="warning" showIcon title="Bot not configured" />;
+}
+
+function BotTab() {
+  const t = useTranslations("settings");
+  const { message } = App.useApp();
+  const { data, isLoading } = useBotSettings();
+  const update = useUpdateBotSettings();
+  const [status, setStatus] = useState<BotStatus | undefined>();
+  const [form] = Form.useForm();
+
+  // Seed the form + last-known status once data arrives.
+  const [seeded, setSeeded] = useState(false);
+  if (data && !seeded) {
+    form.setFieldsValue({
+      token: data.token,
+      webhookSecret: data.webhookSecret,
+      publicUrl: data.publicUrl,
+    });
+    setStatus(data.status);
+    setSeeded(true);
+  }
+
+  if (isLoading) {
+    return (
+      <SettingsTabPanel lead={t("botLead")}>
+        <Skeleton active paragraph={{ rows: 4 }} />
+      </SettingsTabPanel>
+    );
+  }
+
+  const save = () =>
+    form.validateFields().then(async (v) => {
+      try {
+        const result = await update.mutateAsync(v);
+        setStatus(result);
+        if (result.error) message.error(result.error);
+        else message.success(t("botSaved"));
+      } catch {
+        message.error(t("botSaveFailed"));
+      }
+    });
+
+  return (
+    <SettingsTabPanel
+      lead={t("botLead")}
+      footer={
+        <Button type="primary" loading={update.isPending} onClick={save}>
+          {t("botSave")}
+        </Button>
+      }
+    >
+      <div style={{ marginBottom: 16 }}>
+        <BotStatusAlert status={status} />
+      </div>
+      <Form form={form} layout="vertical" requiredMark={false} className="app-settings-rows">
+        <SettingRow title={t("botToken")} description={t("botTokenHint")}>
+          <Form.Item name="token" noStyle>
+            <Input.Password placeholder="123456:ABC-DEF..." />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow title={t("botPublicUrl")} description={t("botPublicUrlHint")}>
+          <Form.Item name="publicUrl" noStyle>
+            <Input placeholder="https://your-domain.com  or  https://xxxx.ngrok-free.app" />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow title={t("botSecret")} description={t("botSecretHint")}>
+          <div style={{ display: "flex", gap: 8, width: "100%" }}>
+            <Form.Item name="webhookSecret" noStyle>
+              <Input placeholder="auto or custom" />
+            </Form.Item>
+            <Button
+              onClick={() =>
+                form.setFieldValue(
+                  "webhookSecret",
+                  crypto.randomUUID().replace(/-/g, ""),
+                )
+              }
+            >
+              {t("botGenerate")}
+            </Button>
+          </div>
+        </SettingRow>
+      </Form>
+
+      <Alert
+        style={{ marginTop: 8 }}
+        type="info"
+        showIcon
+        title={t("botSetupTitle")}
+        description={
+          <ol style={{ margin: 0, paddingInlineStart: 18 }}>
+            <li>{t("botStep1")}</li>
+            <li>{t("botStep2")}</li>
+            <li>{t("botStep3")}</li>
+            <li>{t("botStep4")}</li>
+          </ol>
+        }
+      />
+    </SettingsTabPanel>
+  );
+}
+
 function LoyaltyTab() {
   const t = useTranslations("settings");
   const { message } = App.useApp();
@@ -602,6 +729,7 @@ export default function SettingsPage() {
   const items = [
     { key: "company", label: t("settings.tabCompany"), children: <CompanyTab /> },
     { key: "voucher", label: t("settings.tabVoucher"), children: <VoucherTab /> },
+    { key: "bot", label: t("settings.tabBot"), children: <BotTab /> },
     { key: "loyalty", label: t("settings.tabLoyalty"), children: <LoyaltyTab /> },
     { key: "profile", label: t("settings.tabProfile"), children: <ProfileTab /> },
     {

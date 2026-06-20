@@ -9,6 +9,25 @@ export interface CompanyInfo {
   ownerTelegramChatId: string;
 }
 
+/** Telegram bot connection settings. */
+export interface BotSettings {
+  token: string;
+  webhookSecret: string;
+  publicUrl: string;
+}
+
+export interface BotStatus {
+  configured: boolean;
+  username?: string;
+  webhookUrl?: string;
+  pendingUpdates?: number;
+  error?: string;
+}
+
+export interface BotSettingsResponse extends BotSettings {
+  status: BotStatus;
+}
+
 /** Loyalty point program configuration. */
 export interface LoyaltySettings {
   enabled: boolean;

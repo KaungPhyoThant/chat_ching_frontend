@@ -5,6 +5,8 @@ export interface CompanyInfo {
   email: string;
   address: string;
   website: string;
+  /** Telegram chat id that receives order + low-stock alerts. */
+  ownerTelegramChatId: string;
 }
 
 /** Loyalty point program configuration. */

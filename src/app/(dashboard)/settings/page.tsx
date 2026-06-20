@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  Alert,
   App,
   Button,
   Col,
@@ -209,6 +210,28 @@ function CompanyTab() {
           <Form.Item name="website" noStyle>
             <Input />
           </Form.Item>
+        </SettingRow>
+        <SettingRow
+          title={t("ownerChatId")}
+          description={t("ownerChatIdHint")}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+            <Form.Item name="ownerTelegramChatId" noStyle>
+              <Input placeholder="e.g. 123456789" />
+            </Form.Item>
+            <Alert
+              type="info"
+              showIcon
+              title={t("ownerChatIdSetupTitle")}
+              description={
+                <ol style={{ margin: 0, paddingInlineStart: 18 }}>
+                  <li>{t("ownerChatIdStep1")}</li>
+                  <li>{t("ownerChatIdStep2")}</li>
+                  <li>{t("ownerChatIdStep3")}</li>
+                </ol>
+              }
+            />
+          </div>
         </SettingRow>
       </Form>
     </SettingsTabPanel>

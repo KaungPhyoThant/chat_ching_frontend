@@ -14,6 +14,7 @@ import {
 } from "@/features/customers/hooks/useCustomers";
 import { useFeature } from "@/lib/features/useFeature";
 import { useCustomerGroups } from "@/features/pricing/hooks/usePricing";
+import { CustomerLoyaltyPanel } from "@/features/loyalty/components/CustomerLoyaltyPanel";
 import type { Customer } from "@/features/customers/types";
 
 export default function CustomersPage() {
@@ -118,6 +119,8 @@ export default function CustomersPage() {
                 />
               </div>
             )}
+
+            <CustomerLoyaltyPanel customerId={detail.id} />
 
             <Button danger={!detail.isBlocked} onClick={() => toggleBlock(detail)} loading={updateMutation.isPending}>
               {detail.isBlocked ? "Unblock customer" : "Block customer"}

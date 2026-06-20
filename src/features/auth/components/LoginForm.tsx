@@ -39,7 +39,7 @@ export function LoginForm() {
         <div style={{ width: 36, height: 36, borderRadius: 9, background: "#1677FF" }} />
         <div>
           <Title level={4} style={{ margin: 0 }}>
-            AI Shop Admin
+            Chat Ching
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>
             Telegram store admin

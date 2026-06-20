@@ -8,6 +8,7 @@ import {
   ColorPicker,
   Form,
   Input,
+  InputNumber,
   Row,
   Segmented,
   Select,
@@ -36,6 +37,10 @@ import {
   useVoucherSettings,
   useUpdateVoucherSettings,
 } from "@/features/settings/hooks/useVoucherSettings";
+import {
+  useLoyaltySettings,
+  useUpdateLoyaltySettings,
+} from "@/features/settings/hooks/useLoyaltySettings";
 import {
   PAPER_SIZE_OPTIONS,
   VOUCHER_LAYOUTS,
@@ -75,6 +80,7 @@ const CAPABILITY_ROWS: { key: FeatureKey; label: string; help: string }[] = [
   { key: "multiPriceList", label: "Multiple price lists", help: "Per group / currency / season" },
   { key: "multiCurrency", label: "Multi-currency", help: "Sell in more than one currency" },
   { key: "productAttributes", label: "Custom product attributes", help: "Arbitrary key/value fields" },
+  { key: "imageSearch", label: "Image product search", help: "Customers send a photo in the bot to find similar products (uses AI vision)" },
 ];
 
 function CapabilitiesTab() {
@@ -340,6 +346,88 @@ function VoucherTab() {
   );
 }
 
+function LoyaltyTab() {
+  const t = useTranslations("settings");
+  const { message } = App.useApp();
+  const { data, isLoading } = useLoyaltySettings();
+  const update = useUpdateLoyaltySettings();
+
+  if (isLoading || !data) {
+    return (
+      <SettingsTabPanel lead={t("loyaltyLead")}>
+        <Skeleton active paragraph={{ rows: 4 }} />
+      </SettingsTabPanel>
+    );
+  }
+
+  return (
+    <SettingsTabPanel
+      lead={t("loyaltyLead")}
+      footer={
+        <Button
+          type="primary"
+          form="settings-loyalty-form"
+          htmlType="submit"
+          loading={update.isPending}
+        >
+          {t("saveLoyalty")}
+        </Button>
+      }
+    >
+      <Form
+        id="settings-loyalty-form"
+        layout="vertical"
+        requiredMark={false}
+        className="app-settings-rows"
+        initialValues={data}
+        onFinish={async (values) => {
+          try {
+            await update.mutateAsync(values);
+            message.success(t("loyaltySaved"));
+          } catch {
+            message.error(t("loyaltySaveFailed"));
+          }
+        }}
+      >
+        <SettingRow title={t("loyaltyEnabled")} description={t("loyaltyEnabledHint")}>
+          <Form.Item name="enabled" noStyle valuePropName="checked">
+            <Switch />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow title={t("loyaltyEarn")} description={t("loyaltyEarnHint")}>
+          <Form.Item name="earnPoints" noStyle>
+            <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow
+          title={t("loyaltyPerAmount")}
+          description={t("loyaltyPerAmountHint")}
+        >
+          <Form.Item name="earnPerAmount" noStyle>
+            <InputNumber min={1} step={500} style={{ width: "100%" }} addonBefore="Ks" />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow
+          title={t("loyaltyRedeemValue")}
+          description={t("loyaltyRedeemValueHint")}
+        >
+          <Form.Item name="redeemValuePerPoint" noStyle>
+            <InputNumber min={0} step={10} style={{ width: "100%" }} />
+          </Form.Item>
+        </SettingRow>
+        <SettingRow
+          title={t("loyaltyMinRedeem")}
+          description={t("loyaltyMinRedeemHint")}
+        >
+          <Form.Item name="minRedeemPoints" noStyle>
+            <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+        </SettingRow>
+      </Form>
+    </SettingsTabPanel>
+  );
+}
+
 function ProfileTab() {
   const t = useTranslations("settings");
   const { user } = usePermissions();
@@ -491,6 +579,7 @@ export default function SettingsPage() {
   const items = [
     { key: "company", label: t("settings.tabCompany"), children: <CompanyTab /> },
     { key: "voucher", label: t("settings.tabVoucher"), children: <VoucherTab /> },
+    { key: "loyalty", label: t("settings.tabLoyalty"), children: <LoyaltyTab /> },
     { key: "profile", label: t("settings.tabProfile"), children: <ProfileTab /> },
     {
       key: "preferences",

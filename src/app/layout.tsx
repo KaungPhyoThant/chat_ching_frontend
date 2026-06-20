@@ -18,8 +18,8 @@ const notoSansMyanmar = Noto_Sans_Myanmar({
 });
 
 export const metadata: Metadata = {
-  title: "AI Shop Admin",
-  description: "Electronic Medical Records system",
+  title: "Chat Ching",
+  description: "AI customer support",
 };
 
 export default function RootLayout({

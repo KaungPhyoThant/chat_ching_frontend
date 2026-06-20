@@ -1,13 +1,11 @@
 {
   "common": {
-    "appName": "AI Shop Admin",
+    "appName": "Chat Ching",
     "register": "Register",
-    "book": "Book appointment",
     "addUser": "Add user",
-    "search": "Search patients, MRN, phone…",
-    "searchAppointments": "Search appointments, patient, doctor…",
+    "search": "Search products, orders, customers…",
     "filterStatus": "Filter status",
-    "globalSearch": "Search patients, appointments, records…",
+    "globalSearch": "Search products, orders, customers…",
     "delete": "Delete",
     "cancel": "Cancel",
     "add": "Add",
@@ -53,6 +51,21 @@
     "subtitle": "Account & preferences",
     "tabCompany": "Company info",
     "tabVoucher": "Invoice / Voucher",
+    "tabLoyalty": "Loyalty points",
+    "loyaltyLead": "Reward customers with points on completed orders, redeemable as a discount.",
+    "loyaltyEnabled": "Enable loyalty program",
+    "loyaltyEnabledHint": "Earn & redeem points across the bot and dashboard.",
+    "loyaltyEarn": "Points earned per spend unit",
+    "loyaltyEarnHint": "Points granted for each spend unit below.",
+    "loyaltyPerAmount": "Spend unit (Ks)",
+    "loyaltyPerAmountHint": "e.g. 1000 → earn the points above for every 1,000 Ks of subtotal. Awarded when delivered.",
+    "loyaltyRedeemValue": "Discount per point (Ks)",
+    "loyaltyRedeemValueHint": "How many Ks each point is worth on redemption.",
+    "loyaltyMinRedeem": "Minimum points to redeem",
+    "loyaltyMinRedeemHint": "Customers can redeem only once they reach this balance.",
+    "saveLoyalty": "Save loyalty settings",
+    "loyaltySaved": "Loyalty settings saved.",
+    "loyaltySaveFailed": "Failed to save loyalty settings.",
     "tabProfile": "Profile",
     "tabPreferences": "Preferences",
     "tabSecurity": "Security",
@@ -138,36 +151,8 @@
     "toggleSidebar": "Toggle sidebar",
     "openMenu": "Open navigation menu"
   },
-  "appointments": {
-    "subtitle": "Scheduling & queue management"
-  },
-  "patients": {
-    "title": "Patients",
-    "subtitle": "Manage registrations and patient records",
-    "name": "Name / MRN",
-    "phone": "Phone",
-    "gender": "Gender",
-    "status": "Status",
-    "deleteConfirm": "Delete this patient?",
-    "deleted": "Patient deleted"
-  },
   "status": {
     "active": "Active",
     "inactive": "Inactive"
-  },
-  "gender": {
-    "male": "Male",
-    "female": "Female",
-    "other": "Other"
-  },
-  "services": {
-    "categories": {
-      "consultation": "Consultation",
-      "procedure": "Procedure",
-      "investigation": "Investigation",
-      "roomCharge": "Room Charge",
-      "nursingFee": "Nursing Fee",
-      "medicalSupplies": "Medical Supplies"
-    }
   }
 }

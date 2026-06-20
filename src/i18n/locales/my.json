@@ -1,13 +1,11 @@
 {
   "common": {
-    "appName": "AI Shop Admin",
+    "appName": "ချက်ချင်း",
     "register": "မှတ်ပုံတင်",
-    "book": "ချိန်းဆိုရန်",
     "addUser": "အသုံးပြုသူ ထည့်ရန်",
-    "search": "လူနာ၊ MRN၊ ဖုန်း ရှာရန်…",
-    "searchAppointments": "ချိန်းဆိုမှု၊ လူနာ၊ ဆရာဝန် ရှာရန်…",
+    "search": "ကုန်ပစ္စည်း၊ order၊ ဖောက်သည် ရှာရန်…",
     "filterStatus": "အခြေအနေ စစ်ထုတ်ရန်",
-    "globalSearch": "လူနာ၊ ချိန်းဆိုမှု၊ မှတ်တမ်း ရှာရန်…",
+    "globalSearch": "ကုန်ပစ္စည်း၊ order၊ ဖောက်သည် ရှာရန်…",
     "delete": "ဖျက်ရန်",
     "cancel": "မလုပ်တော့ပါ",
     "add": "ထည့်ရန်",
@@ -53,6 +51,21 @@
     "subtitle": "အကောင့်နှင့် နှစ်သက်ရာများ",
     "tabCompany": "ကုမ္ပဏီအချက်အလက်",
     "tabVoucher": "ပြေစာ / Voucher",
+    "tabLoyalty": "Loyalty points",
+    "loyaltyLead": "Order ပြီးတိုင်း customer ကို point ပေး၊ discount အဖြစ် ပြန်သုံးနိုင်။",
+    "loyaltyEnabled": "Loyalty program ဖွင့်ရန်",
+    "loyaltyEnabledHint": "Bot နဲ့ dashboard မှာ point ရ/သုံး လုပ်နိုင်။",
+    "loyaltyEarn": "သုံးစွဲမှုယူနစ်တစ်ခုလျှင် ရမည့် point",
+    "loyaltyEarnHint": "အောက်က ယူနစ်တစ်ခုစီအတွက် ပေးမည့် point။",
+    "loyaltyPerAmount": "သုံးစွဲမှုယူနစ် (Ks)",
+    "loyaltyPerAmountHint": "ဥပမာ 1000 → subtotal ၁,၀၀၀ Ks တိုင်းအတွက် အပေါ်က point ရ။ Delivered ဖြစ်ချိန် တွက်ပေး။",
+    "loyaltyRedeemValue": "Point တစ်ခု၏ တန်ဖိုး (Ks)",
+    "loyaltyRedeemValueHint": "Point ပြန်သုံးချိန် တစ်ခုလျှင် ဘယ်နှ Ks လျှော့ပေးမလဲ။",
+    "loyaltyMinRedeem": "ပြန်သုံးရန် အနည်းဆုံး point",
+    "loyaltyMinRedeemHint": "ဒီ balance ပြည့်မှ customer ပြန်သုံးနိုင်။",
+    "saveLoyalty": "Loyalty settings သိမ်းရန်",
+    "loyaltySaved": "Loyalty settings သိမ်းပြီးပါပြီ။",
+    "loyaltySaveFailed": "Loyalty settings သိမ်းရန် မအောင်မြင်ပါ။",
     "tabProfile": "ပရိုဖိုင်",
     "tabPreferences": "နှစ်သက်ရာများ",
     "tabSecurity": "လုံခြုံရေး",
@@ -138,36 +151,8 @@
     "toggleSidebar": "ဘေးဘားကို ဖွင့်/ပိတ်",
     "openMenu": "မီနူး ဖွင့်ရန်"
   },
-  "appointments": {
-    "subtitle": "ချိန်းဆိုမှုနှင့် တန်းစီမှု စီမံခန့်ခွဲမှု"
-  },
-  "patients": {
-    "title": "လူနာများ",
-    "subtitle": "မှတ်ပုံတင်မှုနှင့် လူနာမှတ်တမ်းများ စီမံခန့်ခွဲရန်",
-    "name": "အမည် / MRN",
-    "phone": "ဖုန်း",
-    "gender": "ကျား/မ",
-    "status": "အခြေအနေ",
-    "deleteConfirm": "ဤလူနာကို ဖျက်မလား။",
-    "deleted": "လူနာ ဖျက်ပြီးပါပြီ"
-  },
   "status": {
     "active": "သက်ဝင်",
     "inactive": "ရပ်ဆိုင်း"
-  },
-  "gender": {
-    "male": "ကျား",
-    "female": "မ",
-    "other": "အခြား"
-  },
-  "services": {
-    "categories": {
-      "consultation": "ဆရာဝန်ပြသခ",
-      "procedure": "ဆေးကုသမှု လုပ်ဆောင်ချက်",
-      "investigation": "စမ်းသပ်စစ်ဆေးခ",
-      "roomCharge": "အခန်း/ကုတင်ခ",
-      "nursingFee": "ပြုစုစောင့်ရှောက်ခ",
-      "medicalSupplies": "ဆေးပစ္စည်းသုံးစွဲခ"
-    }
   }
 }

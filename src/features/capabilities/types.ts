@@ -5,6 +5,7 @@ export interface Capabilities {
   multiPriceList: boolean;
   multiCurrency: boolean;
   productAttributes: boolean;
+  imageSearch: boolean;
 }
 
 export type FeatureKey = keyof Capabilities;

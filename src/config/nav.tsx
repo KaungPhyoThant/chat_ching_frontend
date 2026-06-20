@@ -10,6 +10,7 @@ import {
   UsergroupAddOutlined,
   MessageOutlined,
   TagsOutlined,
+  CreditCardOutlined,
   SoundOutlined,
   BarChartOutlined,
   UserOutlined,
@@ -52,6 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "promotions", labelKey: "promotions", icon: <TagsOutlined />, path: ROUTES.promotions, group: "operations", permission: "promotion:read" },
   { key: "broadcasts", labelKey: "broadcasts", icon: <SoundOutlined />, path: ROUTES.broadcasts, group: "operations", permission: "broadcast:read" },
   { key: "delivery", labelKey: "delivery", icon: <CarOutlined />, path: ROUTES.delivery, group: "operations", permission: "order:read" },
+  { key: "paymentAccounts", labelKey: "paymentAccounts", icon: <CreditCardOutlined />, path: ROUTES.paymentAccounts, group: "operations", permission: "order:read" },
   // Admin
   { key: "reports", labelKey: "reports", icon: <BarChartOutlined />, path: ROUTES.reports, group: "admin", permission: "report:read" },
   { key: "users", labelKey: "users", icon: <UserOutlined />, path: ROUTES.users, group: "admin", permission: "user:manage" },

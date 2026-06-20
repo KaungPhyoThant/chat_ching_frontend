@@ -10,6 +10,7 @@ export const ROUTES = {
   orders: "/orders",
   customers: "/customers",
   customerGroups: "/customer-groups",
+  paymentAccounts: "/payment-accounts",
   promotions: "/promotions",
   conversations: "/conversations",
   broadcasts: "/broadcasts",

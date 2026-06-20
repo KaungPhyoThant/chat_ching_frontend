@@ -12,7 +12,7 @@ export function GlobalMessageListener() {
     const baseUrl = API_BASE_URL || '';
     
     // Connect to SSE stream
-    const eventSource = new EventSource(`${baseUrl}/api/conversations/events`, {
+    const eventSource = new EventSource(`${baseUrl}/conversations/events`, {
       withCredentials: true, // Needed to send the httpOnly session cookie
     });
 

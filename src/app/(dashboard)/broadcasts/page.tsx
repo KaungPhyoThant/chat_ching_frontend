@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { App, Button, Form, Input, Modal, Popconfirm, Tag } from "antd";
+import { App, Button, Form, Input, Modal, Popconfirm, Select, Tag } from "antd";
 import { SendOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -14,6 +14,8 @@ import {
   useCreateBroadcast,
   useSendBroadcast,
 } from "@/features/broadcasts/hooks/useBroadcasts";
+import { useCustomerGroups } from "@/features/pricing/hooks/usePricing";
+import { useCustomers } from "@/features/customers/hooks/useCustomers";
 import type { Broadcast, BroadcastStatus } from "@/features/broadcasts/types";
 
 const STATUS_COLOR: Record<BroadcastStatus, string> = {
@@ -30,6 +32,9 @@ export default function BroadcastsPage() {
 
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
+  const segmentType = Form.useWatch("segmentType", form);
+  const { data: groups = [] } = useCustomerGroups();
+  const { data: customers = [] } = useCustomers();
 
   const submit = () => {
     form.validateFields().then(async (values) => {
@@ -98,13 +103,40 @@ export default function BroadcastsPage() {
         confirmLoading={createMutation.isPending}
         forceRender
       >
-        <Form form={form} layout="vertical" initialValues={{ segment: "All customers" }}>
+        <Form form={form} layout="vertical" initialValues={{ segmentType: "ALL" }}>
           <Form.Item name="title" label="Title" rules={[{ required: true }]}>
             <Input placeholder="Weekend Flash Sale" />
           </Form.Item>
-          <Form.Item name="segment" label="Segment" rules={[{ required: true }]}>
-            <Input placeholder="All customers" />
+          <Form.Item name="segmentType" label="Send to" rules={[{ required: true }]}>
+            <Select
+              options={[
+                { value: "ALL", label: "All customers" },
+                { value: "GROUP", label: "Customer group" },
+                { value: "CUSTOMER", label: "Specific customer" },
+              ]}
+            />
           </Form.Item>
+          {segmentType === "GROUP" && (
+            <Form.Item name="groupId" label="Customer group" rules={[{ required: true }]}>
+              <Select
+                placeholder="Select group"
+                options={groups.map((g) => ({ value: g.id, label: g.name }))}
+              />
+            </Form.Item>
+          )}
+          {segmentType === "CUSTOMER" && (
+            <Form.Item name="customerId" label="Customer" rules={[{ required: true }]}>
+              <Select
+                showSearch
+                optionFilterProp="label"
+                placeholder="Search customer"
+                options={customers.map((c) => ({
+                  value: c.id,
+                  label: c.fullName || c.username || c.telegramId,
+                }))}
+              />
+            </Form.Item>
+          )}
           <Form.Item name="body" label="Message" rules={[{ required: true }]}>
             <Input.TextArea rows={4} placeholder="Write your announcement…" />
           </Form.Item>

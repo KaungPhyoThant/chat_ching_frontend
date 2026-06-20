@@ -1,12 +1,16 @@
 import { apiClient } from "@/lib/api/client";
 import type { Broadcast } from "../types";
 
+export type SegmentType = "ALL" | "GROUP" | "CUSTOMER";
+
 export interface BroadcastPayload {
   title: string;
   body: string;
-  segment: string;
   imageUrl?: string;
   scheduledAt?: string;
+  segmentType: SegmentType;
+  groupId?: string;
+  customerId?: string;
 }
 
 export async function getBroadcasts(): Promise<Broadcast[]> {

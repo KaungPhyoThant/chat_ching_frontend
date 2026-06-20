@@ -99,12 +99,14 @@ export async function proxyToBackend(
         cache: "no-store",
       });
 
-      const responseBody = await upstream.text();
+      const contentType = upstream.headers.get("content-type") ?? "application/json";
+      const isStream = contentType.includes("text/event-stream");
+      const responseBody = isStream ? upstream.body : await upstream.text();
+      
       const response = new NextResponse(responseBody, {
         status: upstream.status,
         headers: {
-          "Content-Type":
-            upstream.headers.get("content-type") ?? "application/json",
+          "Content-Type": contentType,
         },
       });
       setAuthCookies(response, refreshed);
@@ -112,11 +114,14 @@ export async function proxyToBackend(
     }
   }
 
-  const responseBody = await upstream.text();
+  const contentType = upstream.headers.get("content-type") ?? "application/json";
+  const isStream = contentType.includes("text/event-stream");
+  const responseBody = isStream ? upstream.body : await upstream.text();
+  
   return new NextResponse(responseBody, {
     status: upstream.status,
     headers: {
-      "Content-Type": upstream.headers.get("content-type") ?? "application/json",
+      "Content-Type": contentType,
     },
   });
 }

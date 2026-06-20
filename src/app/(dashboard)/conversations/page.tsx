@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { App, Button, Drawer, Flex, Input, Segmented, Space, Tag } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import { App, Badge, Button, Drawer, Flex, Input, Segmented, Space, Tag } from "antd";
 import { RobotOutlined, UserOutlined, CustomerServiceOutlined, SendOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -10,6 +10,7 @@ import { DataTable } from "@/components/common/DataTable";
 import { fromNow, formatDateTime } from "@/lib/format";
 import {
   useConversations,
+  useMarkConversationRead,
   useReplyConversation,
   useSetHandoff,
 } from "@/features/conversations/hooks/useConversations";
@@ -25,6 +26,7 @@ export default function ConversationsPage() {
   const { message } = App.useApp();
   const { data: conversations = [], isLoading } = useConversations();
   const handoffMutation = useSetHandoff();
+  const { mutate: markConversationRead } = useMarkConversationRead();
   const replyMutation = useReplyConversation();
 
   const [filter, setFilter] = useState<"all" | "handoff">("all");
@@ -36,6 +38,16 @@ export default function ConversationsPage() {
     [conversations, filter],
   );
   const current = conversations.find((c) => c.id === selectedId) ?? null;
+  const totalUnread = conversations.reduce(
+    (sum, conversation) => sum + conversation.unreadCount,
+    0,
+  );
+
+  useEffect(() => {
+    if (current?.unreadCount) {
+      markConversationRead(current.id);
+    }
+  }, [current?.id, current?.unreadCount, markConversationRead]);
 
   const toggleHandoff = async (c: Conversation) => {
     try {
@@ -64,12 +76,23 @@ export default function ConversationsPage() {
       dataIndex: "needsHandoff",
       render: (h: boolean) => (h ? <Tag color="red">Needs agent</Tag> : <Tag color="blue">Bot</Tag>),
     },
+    {
+      title: "Unread",
+      dataIndex: "unreadCount",
+      width: 90,
+      render: (count: number) => (
+        <Badge count={count} showZero color={count ? "blue" : "default"} />
+      ),
+    },
     { title: "Last message", dataIndex: "lastMessageAt", render: (v: string) => fromNow(v) },
   ];
 
   return (
     <>
-      <PageHeader title="Conversations" subtitle="AI assistant chats and human handoffs" />
+      <PageHeader
+        title="Conversations"
+        subtitle={`${totalUnread} unread customer message${totalUnread === 1 ? "" : "s"}`}
+      />
       <ContentCard
         toolbar={
           <Space style={{ padding: 16 }}>

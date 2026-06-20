@@ -24,6 +24,21 @@ function forwardRequestHeaders(request: Request): Headers {
   return headers;
 }
 
+function responseHeaders(upstream: Response): Headers {
+  const headers = new Headers();
+  headers.set(
+    "Content-Type",
+    upstream.headers.get("content-type") ?? "application/json",
+  );
+
+  for (const name of ["cache-control", "x-accel-buffering"]) {
+    const value = upstream.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+
+  return headers;
+}
+
 interface BackendAuthPayload {
   accessToken: string;
   refreshToken: string;
@@ -105,9 +120,7 @@ export async function proxyToBackend(
       
       const response = new NextResponse(responseBody, {
         status: upstream.status,
-        headers: {
-          "Content-Type": contentType,
-        },
+        headers: responseHeaders(upstream),
       });
       setAuthCookies(response, refreshed);
       return response;
@@ -120,9 +133,7 @@ export async function proxyToBackend(
   
   return new NextResponse(responseBody, {
     status: upstream.status,
-    headers: {
-      "Content-Type": contentType,
-    },
+    headers: responseHeaders(upstream),
   });
 }
 

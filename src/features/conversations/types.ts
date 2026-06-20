@@ -14,6 +14,7 @@ export interface Conversation {
   intent?: string;
   botState?: string;
   needsHandoff: boolean;
+  unreadCount: number;
   lastMessageAt: string;
   messages: ConversationMessage[];
 }

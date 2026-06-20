@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getConversations,
+  markConversationRead,
   replyToConversation,
   setHandoff,
 } from "../api/conversations-api";
@@ -29,6 +30,14 @@ export function useReplyConversation() {
   return useMutation({
     mutationFn: ({ id, text }: { id: string; text: string }) =>
       replyToConversation(id, text),
+    onSuccess: () => qc.invalidateQueries({ queryKey: conversationKeys.list }),
+  });
+}
+
+export function useMarkConversationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: markConversationRead,
     onSuccess: () => qc.invalidateQueries({ queryKey: conversationKeys.list }),
   });
 }

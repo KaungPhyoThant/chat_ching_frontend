@@ -22,6 +22,13 @@ export async function setHandoff(
   return data;
 }
 
+export async function markConversationRead(id: string): Promise<Conversation> {
+  const { data } = await apiClient.patch<Conversation>(
+    `/conversations/${id}/read`,
+  );
+  return data;
+}
+
 export async function replyToConversation(
   id: string,
   text: string,

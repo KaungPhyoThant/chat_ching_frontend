@@ -181,6 +181,8 @@ html[data-theme="dark"] {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* Breathing room so the last item (Settings) isn't glued to the bottom edge. */
+  padding-block: 8px 20px;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }

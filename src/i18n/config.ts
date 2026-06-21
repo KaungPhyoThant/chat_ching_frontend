@@ -6,7 +6,7 @@ export const LOCALES: Locale[] = ["en", "my"];
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   en: "EN",
-  my: "မြ",
+  my: "မြန်မာ",
 };
 
 export type Messages = typeof en;

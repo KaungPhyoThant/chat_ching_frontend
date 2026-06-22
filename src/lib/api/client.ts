@@ -69,7 +69,12 @@ apiClient.interceptors.response.use(
         handlingUnauthorized = true;
         try {
           await clearAuthSession();
-          if (!window.location.pathname.startsWith("/login")) {
+          const pathname = window.location.pathname;
+          const isPublic =
+            pathname.startsWith("/login") ||
+            pathname.startsWith("/telegram-shop") ||
+            pathname.startsWith("/portal");
+          if (!isPublic) {
             window.location.replace("/login");
           }
         } finally {

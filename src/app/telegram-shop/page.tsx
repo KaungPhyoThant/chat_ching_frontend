@@ -108,11 +108,11 @@ export default function TelegramShopPage() {
       try {
         const prodRes = await fetch("/api/bot/products");
         const prodData = await prodRes.json();
-        setProducts(prodData);
+        setProducts(prodData?.data ?? []);
 
         const regRes = await fetch("/api/bot/delivery-regions");
         const regData = await regRes.json();
-        setRegions(regData);
+        setRegions(regData?.data ?? []);
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("Failed to load catalog/delivery data", err);
@@ -197,9 +197,10 @@ export default function TelegramShopPage() {
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setOrderSuccess(data.orderNo);
+      const responseData = await res.json();
+      if (res.ok && responseData.success) {
+        const orderInfo = responseData.data;
+        setOrderSuccess(orderInfo?.orderNo);
         setCart([]);
         setTimeout(() => {
           const tg = window.Telegram?.WebApp;

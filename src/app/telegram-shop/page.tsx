@@ -659,6 +659,11 @@ export default function TelegramShopPage() {
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   Welcome, {fullName}
                 </div>
+                {/* ponytail: temporary diagnostic — remove once sync confirmed.
+                    If you don't see this line, you're on a stale cached bundle. */}
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>
+                  dbg: tg={typeof window !== "undefined" && window.Telegram?.WebApp ? "y" : "n"} · initData={initData.length}
+                </div>
               </div>
               <div className="cart-badge-btn" onClick={() => setShowCart(true)}>
                 <span>🛒</span>

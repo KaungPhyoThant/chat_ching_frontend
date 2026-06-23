@@ -440,13 +440,13 @@ export default function TelegramShopPage() {
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
         :root {
-          --theme-bg: #0b0f19;
-          --theme-panel: rgba(255, 255, 255, 0.03);
-          --theme-border: rgba(255, 255, 255, 0.06);
-          --theme-accent: #00f2fe;
-          --theme-accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-          --text-color: #f8fafc;
-          --text-muted: #94a3b8;
+          --theme-bg: #091413;
+          --theme-panel: rgba(176, 228, 204, 0.05);
+          --theme-border: rgba(176, 228, 204, 0.14);
+          --theme-accent: #b0e4cc;
+          --theme-accent-gradient: linear-gradient(135deg, #408a71 0%, #b0e4cc 100%);
+          --text-color: #eaf5ef;
+          --text-muted: #7fae9d;
         }
 
         body {
@@ -476,8 +476,8 @@ export default function TelegramShopPage() {
           --theme-border: #cbd5e1;
           --text-color: #0f172a;
           --text-muted: #475569;
-          --theme-accent: #0369a1;
-          --theme-accent-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+          --theme-accent: #285a48;
+          --theme-accent-gradient: linear-gradient(135deg, #408a71 0%, #285a48 100%);
         }
 
         /* Accent-filled controls carry dark text in dark mode; flip to white on
@@ -581,7 +581,7 @@ export default function TelegramShopPage() {
           top: -4px;
           right: -4px;
           background: var(--theme-accent-gradient);
-          color: #0b0f19;
+          color: #091413;
           font-size: 11px;
           font-weight: 700;
           border-radius: 50%;
@@ -590,7 +590,7 @@ export default function TelegramShopPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+          box-shadow: 0 0 10px rgba(176, 228, 204, 0.35);
         }
 
         .categories {
@@ -620,7 +620,7 @@ export default function TelegramShopPage() {
 
         .category-tab.active {
           background: var(--theme-accent-gradient);
-          color: #0b0f19;
+          color: #091413;
           border-color: transparent;
           font-weight: 600;
         }
@@ -643,7 +643,7 @@ export default function TelegramShopPage() {
         }
 
         .prod-image-placeholder {
-          background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
+          background: linear-gradient(135deg, rgba(64, 138, 113, 0.12) 0%, rgba(176, 228, 204, 0.1) 100%);
           border-radius: 12px;
           height: 100px;
           display: flex;
@@ -681,7 +681,7 @@ export default function TelegramShopPage() {
 
         .btn-add:active {
           background: var(--theme-accent);
-          color: #0b0f19;
+          color: #091413;
         }
 
         .modal-overlay {
@@ -858,7 +858,7 @@ export default function TelegramShopPage() {
 
         .btn-submit {
           background: var(--theme-accent-gradient);
-          color: #0b0f19;
+          color: #091413;
           font-weight: 700;
           border: none;
           border-radius: 8px;
@@ -866,7 +866,7 @@ export default function TelegramShopPage() {
           width: 100%;
           cursor: pointer;
           font-size: 16px;
-          box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+          box-shadow: 0 4px 15px rgba(64, 138, 113, 0.35);
           margin-top: 10px;
         }
 

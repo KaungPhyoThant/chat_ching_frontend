@@ -1032,6 +1032,8 @@ export default function TelegramShopPage() {
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   {t("welcome")}, {fullName}
                 </div>
+                {/* Deploy marker — bump on each push to confirm Vercel updated. */}
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #4 · variants ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">

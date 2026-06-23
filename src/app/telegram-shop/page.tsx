@@ -75,7 +75,7 @@ export default function TelegramShopPage() {
 
   // User and checkout details
   const [telegramId, setTelegramId] = useState<string>(() => urlParam("tgId") ?? "12345678");
-  const [fullName, setFullName] = useState<string>("Guest User");
+  const [fullName, setFullName] = useState<string>(() => urlParam("name") || "Guest User");
   const [username, setUsername] = useState<string>("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");

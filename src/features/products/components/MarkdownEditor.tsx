@@ -10,17 +10,19 @@ interface Props {
 }
 
 /** Minimal Markdown editor: format toolbar + textarea + live preview. */
-export function MarkdownEditor({ value = "", onChange }: Props) {
+export function MarkdownEditor({ value, onChange }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const { token } = theme.useToken();
+  // Form.Item can pass null (e.g. a product saved without a description).
+  const val = value ?? "";
 
   const wrap = (before: string, after = before) => {
     const ta = ref.current;
     if (!ta) return;
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
-    const sel = value.slice(start, end) || "text";
-    onChange?.(value.slice(0, start) + before + sel + after + value.slice(end));
+    const sel = val.slice(start, end) || "text";
+    onChange?.(val.slice(0, start) + before + sel + after + val.slice(end));
     requestAnimationFrame(() => {
       ta.focus();
       ta.selectionStart = start + before.length;
@@ -29,7 +31,7 @@ export function MarkdownEditor({ value = "", onChange }: Props) {
   };
 
   const addListItem = () =>
-    onChange?.(`${value}${value && !value.endsWith("\n") ? "\n" : ""}- `);
+    onChange?.(`${val}${val && !val.endsWith("\n") ? "\n" : ""}- `);
 
   return (
     <div>
@@ -53,7 +55,7 @@ export function MarkdownEditor({ value = "", onChange }: Props) {
       <textarea
         ref={ref}
         rows={4}
-        value={value}
+        value={val}
         onChange={(e) => onChange?.(e.target.value)}
         placeholder="Description — **bold**, *italic*, [link](https://…), - list"
         style={{
@@ -69,7 +71,7 @@ export function MarkdownEditor({ value = "", onChange }: Props) {
           resize: "vertical",
         }}
       />
-      {value.trim() && (
+      {val.trim() && (
         <div
           style={{
             marginTop: 8,
@@ -79,7 +81,7 @@ export function MarkdownEditor({ value = "", onChange }: Props) {
             fontSize: 13,
             color: token.colorTextSecondary,
           }}
-          dangerouslySetInnerHTML={{ __html: mdToHtml(value) }}
+          dangerouslySetInnerHTML={{ __html: mdToHtml(val) }}
         />
       )}
     </div>

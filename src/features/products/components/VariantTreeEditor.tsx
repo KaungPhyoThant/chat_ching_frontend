@@ -193,7 +193,10 @@ export function VariantTreeEditor({ optionTypes, variants, onChange }: Props) {
           {variants.length === 0 && (
             <Typography.Text type="secondary">No variants yet.</Typography.Text>
           )}
-          {variants.map((v) => (
+          {variants.map((raw) => {
+            // Variants loaded from the DB may predate tiers — normalise to [].
+            const v = { ...raw, tiers: raw.tiers ?? [] };
+            return (
             <div
               key={v.id}
               style={{ borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: 8 }}
@@ -306,7 +309,8 @@ export function VariantTreeEditor({ optionTypes, variants, onChange }: Props) {
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </Space>
       </Card>
     </Space>

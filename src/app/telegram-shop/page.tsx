@@ -10,6 +10,7 @@ interface Product {
   price: number;
   stock: number;
   category: { name: string };
+  images?: string[];
 }
 
 interface Township {
@@ -677,7 +678,21 @@ export default function TelegramShopPage() {
                 {filteredProducts.map((p) => (
                   <div className="product-card" key={p.id}>
                     <div>
-                      <div className="prod-image-placeholder">🛍️</div>
+                      {p.images && p.images.length > 0 && p.images[0] ? (
+                        <img
+                          src={p.images[0]}
+                          alt={p.name}
+                          style={{
+                            width: "100%",
+                            height: "100px",
+                            objectFit: "cover",
+                            borderRadius: "12px",
+                            marginBottom: "10px",
+                          }}
+                        />
+                      ) : (
+                        <div className="prod-image-placeholder">🛍️</div>
+                      )}
                       <h4 className="prod-name">{p.name}</h4>
                       <div className="prod-price">{p.price.toLocaleString()} Ks</div>
                     </div>

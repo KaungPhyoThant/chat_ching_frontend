@@ -169,6 +169,7 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   addToCart: { en: "+ Add to Cart", my: "+ ခြင်းထဲထည့်" },
   from: { en: "from", my: "စ" },
   chooseOptions: { en: "Choose options", my: "ရွေးချယ်ပါ" },
+  inStock: { en: "In stock", my: "လက်ကျန်" },
   add: { en: "Add to Cart", my: "ခြင်းထဲ ထည့်မည်" },
   shoppingCart: { en: "Shopping Cart", my: "ဈေးခြင်း" },
   cartEmpty: { en: "Your cart is empty.", my: "ဈေးခြင်း ဗလာဖြစ်နေသည်။" },
@@ -223,15 +224,13 @@ export default function TelegramShopPage() {
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderHistoryEntry[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  // Product detail modal (image slider + description).
+  // Product detail modal (image slider + description + variant picker).
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
-  // Variant picker modal: which product, and the chosen value per option type.
-  const [variantModal, setVariantModal] = useState<Product | null>(null);
   const [variantPick, setVariantPick] = useState<Record<string, string>>({});
 
-  const openVariantModal = (p: Product) => {
+  const openDetail = (p: Product) => {
     setVariantPick({});
-    setVariantModal(p);
+    setDetailProduct(p);
   };
 
   /** Human label for a resolved variant, e.g. "Red / Large". */
@@ -1107,7 +1106,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #8 · detail ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #9 · detail+var ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1192,7 +1191,7 @@ export default function TelegramShopPage() {
               <div className="product-grid">
                 {filteredProducts.map((p) => (
                   <div className="product-card" key={p.id}>
-                    <div onClick={() => setDetailProduct(p)} style={{ cursor: "pointer" }}>
+                    <div onClick={() => openDetail(p)} style={{ cursor: "pointer" }}>
                       {p.images && p.images.length > 0 && p.images[0] ? (
                         <img
                           src={p.images[0]}
@@ -1216,9 +1215,7 @@ export default function TelegramShopPage() {
                     </div>
                     <button
                       className="btn-add"
-                      onClick={() =>
-                        hasVariantChoice(p) ? openVariantModal(p) : addToCart(p)
-                      }
+                      onClick={() => (hasVariantChoice(p) ? openDetail(p) : addToCart(p))}
                     >
                       {t("addToCart")}
                     </button>
@@ -1458,21 +1455,60 @@ export default function TelegramShopPage() {
               </div>
             )}
 
-            {/* Variant picker modal */}
-            {variantModal &&
+            {/* Product detail — slider, description, stock, variant picker */}
+            {detailProduct &&
               (() => {
-                const p = variantModal;
+                const p = detailProduct;
                 const opts = variantOptions(p);
+                const hasVar = hasVariantChoice(p);
                 const matched = matchVariant(p, variantPick);
+                const imgs = (p.images ?? []).filter(Boolean);
+                const price = matched?.price ?? p.price;
+                const stock = matched?.stock ?? p.stock;
                 return (
                   <div className="modal-overlay">
                     <div className="modal-content">
                       <div className="modal-header">
                         <span className="modal-title">{p.name}</span>
-                        <button className="close-btn" onClick={() => setVariantModal(null)}>
+                        <button className="close-btn" onClick={() => setDetailProduct(null)}>
                           ✕
                         </button>
                       </div>
+
+                      {imgs.length > 0 ? (
+                        <div className="img-slider">
+                          {imgs.map((src, i) => (
+                            <img key={i} src={src} alt={`${p.name} ${i + 1}`} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="prod-image-placeholder" style={{ height: 220 }}>
+                          🛍️
+                        </div>
+                      )}
+
+                      <div className="prod-price" style={{ margin: "12px 0 4px" }}>
+                        {hasVar && !matched ? `${t("from")} ` : ""}
+                        {price.toLocaleString()} Ks
+                      </div>
+                      <div
+                        style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10 }}
+                      >
+                        {t("inStock")}: {stock}
+                      </div>
+                      {p.description && (
+                        <div
+                          style={{
+                            fontSize: 14,
+                            color: "var(--text-muted)",
+                            marginBottom: 12,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {p.description}
+                        </div>
+                      )}
+
                       {opts.map((opt, oi) => (
                         <div key={opt.id} style={{ marginBottom: 14 }}>
                           <div
@@ -1491,9 +1527,6 @@ export default function TelegramShopPage() {
                                   onClick={() =>
                                     setVariantPick((prev) => {
                                       const next = { ...prev, [opt.id]: c.tok };
-                                      // changing a level resets later levels, then
-                                      // auto-selects the first still-valid value for
-                                      // each so a price shows without extra taps.
                                       for (let j = oi + 1; j < opts.length; j++)
                                         delete next[opts[j].id];
                                       for (let j = oi + 1; j < opts.length; j++) {
@@ -1514,72 +1547,26 @@ export default function TelegramShopPage() {
                           </div>
                         </div>
                       ))}
-                      <div className="prod-price" style={{ margin: "12px 0" }}>
-                        {(matched?.price ?? p.price).toLocaleString()} Ks
-                      </div>
+
                       <button
                         className="btn-submit"
-                        disabled={!matched}
+                        disabled={hasVar && !matched}
                         onClick={() => {
-                          if (!matched) return;
-                          addToCart(p, matched, variantLabelOf(p, variantPick));
-                          setVariantModal(null);
+                          if (hasVar) {
+                            if (!matched) return;
+                            addToCart(p, matched, variantLabelOf(p, variantPick));
+                          } else {
+                            addToCart(p);
+                          }
+                          setDetailProduct(null);
                         }}
                       >
-                        {t("add")}
+                        {t("addToCart")}
                       </button>
                     </div>
                   </div>
                 );
               })()}
-
-            {/* Product detail modal (image slider) */}
-            {detailProduct && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <span className="modal-title">{detailProduct.name}</span>
-                    <button className="close-btn" onClick={() => setDetailProduct(null)}>
-                      ✕
-                    </button>
-                  </div>
-
-                  {detailProduct.images && detailProduct.images.filter(Boolean).length > 0 ? (
-                    <div className="img-slider">
-                      {detailProduct.images.filter(Boolean).map((src, i) => (
-                        <img key={i} src={src} alt={`${detailProduct.name} ${i + 1}`} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="prod-image-placeholder" style={{ height: 220 }}>
-                      🛍️
-                    </div>
-                  )}
-
-                  <div className="prod-price" style={{ margin: "12px 0 4px" }}>
-                    {hasVariantChoice(detailProduct) ? `${t("from")} ` : ""}
-                    {detailProduct.price.toLocaleString()} Ks
-                  </div>
-                  {detailProduct.description && (
-                    <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 12 }}>
-                      {detailProduct.description}
-                    </div>
-                  )}
-
-                  <button
-                    className="btn-submit"
-                    onClick={() => {
-                      const p = detailProduct;
-                      setDetailProduct(null);
-                      if (hasVariantChoice(p)) openVariantModal(p);
-                      else addToCart(p);
-                    }}
-                  >
-                    {t("addToCart")}
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>

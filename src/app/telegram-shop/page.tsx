@@ -492,11 +492,22 @@ export default function TelegramShopPage() {
           display: flex;
           gap: 8px;
           align-items: center;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
 
+        /* Search: pill shape with an inline magnifier icon. */
         .toolbar .form-input {
           margin: 0;
+          border-radius: 999px;
+          padding-left: 40px;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
+          background-repeat: no-repeat;
+          background-position: left 14px center;
+        }
+        .toolbar .form-input:focus {
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
+          background-repeat: no-repeat;
+          background-position: left 14px center;
         }
 
         .icon-toggle {
@@ -505,8 +516,9 @@ export default function TelegramShopPage() {
           border: 1px solid var(--theme-border);
           color: var(--text-color);
           border-radius: 8px;
-          padding: 8px 10px;
+          padding: 6px 8px;
           font-size: 14px;
+          line-height: 1;
           cursor: pointer;
           font-family: inherit;
         }
@@ -515,6 +527,14 @@ export default function TelegramShopPage() {
           display: flex;
           gap: 8px;
           margin-bottom: 16px;
+        }
+
+        .filter-row .form-input:first-child {
+          flex: 1.4;
+        }
+        .filter-row .form-input {
+          flex: 1;
+          min-width: 0;
         }
 
         .filter-row .form-input {
@@ -802,13 +822,14 @@ export default function TelegramShopPage() {
         .form-input {
           width: 100%;
           box-sizing: border-box;
-          background: rgba(0, 0, 0, 0.2);
+          background: var(--theme-panel);
           border: 1px solid var(--theme-border);
-          border-radius: 8px;
-          padding: 10px;
+          border-radius: 12px;
+          padding: 11px 14px;
           color: var(--text-color);
           font-family: inherit;
           font-size: 14px;
+          transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
 
         /* Replace the native OS dropdown chrome with a themed chevron. */
@@ -831,6 +852,8 @@ export default function TelegramShopPage() {
         .form-input:focus {
           outline: none;
           border-color: var(--theme-accent);
+          background: var(--theme-bg);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 22%, transparent);
         }
 
         .btn-submit {
@@ -892,7 +915,7 @@ export default function TelegramShopPage() {
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
-                  {lang === "en" ? "🇬🇧 ENG" : "🇲🇲 MM"}
+                  {lang === "en" ? "🇬🇧" : "🇲🇲"}
                 </button>
                 <button className="icon-toggle" onClick={toggleTheme} title="Theme">
                   {theme === "dark" ? "🌙" : "☀️"}

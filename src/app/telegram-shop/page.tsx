@@ -65,6 +65,63 @@ const urlParam = (key: string): string | null =>
     ? null
     : new URLSearchParams(window.location.search).get(key);
 
+type Lang = "en" | "my";
+
+// Minimal inline i18n — covers the Mini App chrome only (product/region names
+// come from the backend). No library needed for one page.
+const STRINGS: Record<string, { en: string; my: string }> = {
+  welcome: { en: "Welcome", my: "ကြိုဆိုပါတယ်" },
+  all: { en: "All", my: "အားလုံး" },
+  searchPlaceholder: { en: "Search products…", my: "ပစ္စည်း ရှာရန်…" },
+  sortDefault: { en: "Sort: Default", my: "စဥ်ရန်: ပုံမှန်" },
+  sortPriceAsc: { en: "Price: Low → High", my: "ဈေး: နိမ့် → မြင့်" },
+  sortPriceDesc: { en: "Price: High → Low", my: "ဈေး: မြင့် → နိမ့်" },
+  minPrice: { en: "Min", my: "အနိမ့်ဆုံး" },
+  maxPrice: { en: "Max", my: "အမြင့်ဆုံး" },
+  loading: { en: "Loading catalog…", my: "ပစ္စည်းများ ဖွင့်နေသည်…" },
+  noProducts: { en: "No products found.", my: "ပစ္စည်း မတွေ့ပါ။" },
+  addToCart: { en: "+ Add to Cart", my: "+ ခြင်းထဲထည့်" },
+  shoppingCart: { en: "Shopping Cart", my: "ဈေးခြင်း" },
+  cartEmpty: { en: "Your cart is empty.", my: "ဈေးခြင်း ဗလာဖြစ်နေသည်။" },
+  checkoutDetails: { en: "Checkout Details", my: "မှာယူမှု အချက်အလက်" },
+  contactPhone: { en: "Contact Phone", my: "ဆက်သွယ်ရန် ဖုန်း" },
+  phonePlaceholder: { en: "e.g. 09123456789", my: "ဥပမာ 09123456789" },
+  regionState: { en: "Region / State", my: "တိုင်း / ပြည်နယ်" },
+  city: { en: "City", my: "မြို့" },
+  township: { en: "Township", my: "မြို့နယ်" },
+  selectRegion: { en: "Select Region", my: "တိုင်း ရွေးပါ" },
+  selectCity: { en: "Select City", my: "မြို့ ရွေးပါ" },
+  selectTownship: { en: "Select Township", my: "မြို့နယ် ရွေးပါ" },
+  detailedAddress: { en: "Detailed Shipping Address", my: "အသေးစိတ် လိပ်စာ" },
+  addressPlaceholder: {
+    en: "Street, Building, Apartment No…",
+    my: "လမ်း၊ အဆောက်အအုံ၊ အခန်းနံပါတ်…",
+  },
+  paymentMethod: { en: "Payment Method", my: "ငွေပေးချေမှု နည်းလမ်း" },
+  cod: { en: "Cash on Delivery (COD)", my: "အိမ်ရောက်ငွေချေ (COD)" },
+  transferRef: {
+    en: "Transfer Reference Number / Proof Link",
+    my: "လွှဲငွေ Ref နံပါတ် / အထောက်အထား",
+  },
+  transferRefPlaceholder: {
+    en: "Reference / Transaction ID",
+    my: "Reference / Transaction ID",
+  },
+  subtotal: { en: "Subtotal", my: "စုစုပေါင်း (ပစ္စည်း)" },
+  deliveryFee: { en: "Delivery Fee", my: "ပို့ဆောင်ခ" },
+  total: { en: "Total", my: "စုစုပေါင်း" },
+  placeOrder: { en: "Place Order", my: "မှာယူမည်" },
+  placingOrder: { en: "Placing Order…", my: "မှာယူနေသည်…" },
+  orderPlaced: { en: "Order Placed!", my: "မှာယူပြီးပါပြီ!" },
+  orderNotified: {
+    en: "We have notified the shop. This window will close shortly.",
+    my: "ဆိုင်သို့ အကြောင်းကြားပြီးပါပြီ။ ဒီ window ခဏနေ ပိတ်ပါမည်။",
+  },
+};
+
+const persisted = (key: string, fallback: string): string =>
+  (typeof window !== "undefined" && localStorage.getItem(key)) || fallback;
+
 export default function TelegramShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -72,6 +129,28 @@ export default function TelegramShopPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
+
+  // Theme + language (persisted), and catalog filters.
+  const [theme, setTheme] = useState<"dark" | "light">(
+    () => persisted("tg-theme", "dark") as "dark" | "light",
+  );
+  const [lang, setLang] = useState<Lang>(() => persisted("tg-lang", "en") as Lang);
+  const t = (key: string) => STRINGS[key]?.[lang] ?? STRINGS[key]?.en ?? key;
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"default" | "asc" | "desc">("default");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("tg-theme", next);
+  };
+  const toggleLang = () => {
+    const next: Lang = lang === "en" ? "my" : "en";
+    setLang(next);
+    localStorage.setItem("tg-lang", next);
+  };
 
   // User and checkout details
   const [telegramId, setTelegramId] = useState<string>(() => urlParam("tgId") ?? "12345678");
@@ -193,10 +272,18 @@ export default function TelegramShopPage() {
     }
   }
 
-  // Derived listings
+  // Derived listings — category tab + search + price range + sort.
   const categories = ["All", ...Array.from(new Set(products.map((p) => p.category.name)))];
-  const filteredProducts =
-    activeTab === "All" ? products : products.filter((p) => p.category.name === activeTab);
+  const min = Number(minPrice) || 0;
+  const max = Number(maxPrice) || Infinity;
+  const q = search.trim().toLowerCase();
+  const filteredProducts = products
+    .filter((p) => activeTab === "All" || p.category.name === activeTab)
+    .filter((p) => !q || p.name.toLowerCase().includes(q))
+    .filter((p) => p.price >= min && p.price <= max)
+    .sort((a, b) =>
+      sortBy === "asc" ? a.price - b.price : sortBy === "desc" ? b.price - a.price : 0,
+    );
 
   const selectedRegion = regions.find((r) => r.id === selectedRegionId);
   const selectedCity = selectedRegion?.cities.find((c) => c.id === selectedCityId);
@@ -336,7 +423,51 @@ export default function TelegramShopPage() {
           max-width: 600px;
           margin: 0 auto;
           padding: 16px;
+          min-height: 100vh;
+          background: var(--theme-bg);
           color: var(--text-color);
+        }
+
+        /* Light theme — overrides the design tokens for this subtree. */
+        .container.light {
+          --theme-bg: #ffffff;
+          --theme-panel: #f1f5f9;
+          --theme-border: #e2e8f0;
+          --text-color: #0f172a;
+          --text-muted: #64748b;
+        }
+
+        .toolbar {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .toolbar .form-input {
+          margin: 0;
+        }
+
+        .icon-toggle {
+          flex: 0 0 auto;
+          background: var(--theme-panel);
+          border: 1px solid var(--theme-border);
+          color: var(--text-color);
+          border-radius: 8px;
+          padding: 8px 10px;
+          font-size: 14px;
+          cursor: pointer;
+          font-family: inherit;
+        }
+
+        .filter-row {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .filter-row .form-input {
+          margin: 0;
         }
 
         .header {
@@ -556,7 +687,7 @@ export default function TelegramShopPage() {
         .qty-btn {
           background: var(--theme-panel);
           border: 1px solid var(--theme-border);
-          color: white;
+          color: var(--text-color);
           width: 28px;
           height: 28px;
           border-radius: 6px;
@@ -607,7 +738,7 @@ export default function TelegramShopPage() {
           border: 1px solid var(--theme-border);
           border-radius: 8px;
           padding: 10px;
-          color: white;
+          color: var(--text-color);
           font-family: inherit;
           font-size: 14px;
         }
@@ -625,8 +756,8 @@ export default function TelegramShopPage() {
         }
 
         .form-input option {
-          background: #0f172a;
-          color: white;
+          background: var(--theme-bg);
+          color: var(--text-color);
         }
 
         .form-input:focus {
@@ -670,16 +801,16 @@ export default function TelegramShopPage() {
         }
       `}</style>
 
-      <div className="container">
+      <div className={`container ${theme === "light" ? "light" : ""}`}>
         {orderSuccess ? (
           <div className="success-overlay">
             <div className="success-icon">🎉</div>
-            <h2>Order Placed!</h2>
+            <h2>{t("orderPlaced")}</h2>
             <p style={{ color: "var(--theme-accent)", fontWeight: 700, fontSize: "18px" }}>
               #{orderSuccess}
             </p>
             <p style={{ color: "var(--text-muted)", marginTop: "10px" }}>
-              We have notified the shop. This window will close shortly.
+              {t("orderNotified")}
             </p>
           </div>
         ) : (
@@ -688,22 +819,64 @@ export default function TelegramShopPage() {
               <div>
                 <span className="logo">AI Shop</span>
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Welcome, {fullName}
-                </div>
-                {/* ponytail: temporary diagnostic — remove once sync confirmed.
-                    If you don't see this line, you're on a stale cached bundle. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>
-                  dbg: initData={initData.length} · auth={initData || (telegramId && sig) ? "y" : "n"}
+                  {t("welcome")}, {fullName}
                 </div>
               </div>
-              <div className="cart-badge-btn" onClick={() => setShowCart(true)}>
-                <span>🛒</span>
-                {cart.length > 0 && (
-                  <span className="badge">
-                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                  </span>
-                )}
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button className="icon-toggle" onClick={toggleLang} title="Language">
+                  {lang === "en" ? "🇬🇧 EN" : "🇲🇲 မြန်မာ"}
+                </button>
+                <button className="icon-toggle" onClick={toggleTheme} title="Theme">
+                  {theme === "dark" ? "🌙" : "☀️"}
+                </button>
+                <div className="cart-badge-btn" onClick={() => setShowCart(true)}>
+                  <span>🛒</span>
+                  {cart.length > 0 && (
+                    <span className="badge">
+                      {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                    </span>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {/* Search */}
+            <div className="toolbar">
+              <input
+                className="form-input"
+                placeholder={t("searchPlaceholder")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Sort + price range */}
+            <div className="filter-row">
+              <select
+                className="form-input"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "default" | "asc" | "desc")}
+              >
+                <option value="default">{t("sortDefault")}</option>
+                <option value="asc">{t("sortPriceAsc")}</option>
+                <option value="desc">{t("sortPriceDesc")}</option>
+              </select>
+              <input
+                className="form-input"
+                type="number"
+                inputMode="numeric"
+                placeholder={t("minPrice")}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+              <input
+                className="form-input"
+                type="number"
+                inputMode="numeric"
+                placeholder={t("maxPrice")}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
             </div>
 
             {/* Category selection */}
@@ -714,13 +887,17 @@ export default function TelegramShopPage() {
                   className={`category-tab ${activeTab === c ? "active" : ""}`}
                   onClick={() => setActiveTab(c)}
                 >
-                  {c}
+                  {c === "All" ? t("all") : c}
                 </button>
               ))}
             </div>
 
             {loading ? (
-              <div style={{ textAlign: "center", padding: "40px" }}>Loading catalog...</div>
+              <div style={{ textAlign: "center", padding: "40px" }}>{t("loading")}</div>
+            ) : filteredProducts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
+                {t("noProducts")}
+              </div>
             ) : (
               <div className="product-grid">
                 {filteredProducts.map((p) => (
@@ -745,7 +922,7 @@ export default function TelegramShopPage() {
                       <div className="prod-price">{p.price.toLocaleString()} Ks</div>
                     </div>
                     <button className="btn-add" onClick={() => addToCart(p)}>
-                      + Add to Cart
+                      {t("addToCart")}
                     </button>
                   </div>
                 ))}
@@ -757,14 +934,14 @@ export default function TelegramShopPage() {
               <div className="modal-overlay">
                 <div className="modal-content">
                   <div className="modal-header">
-                    <span className="modal-title">Shopping Cart</span>
+                    <span className="modal-title">{t("shoppingCart")}</span>
                     <button className="close-btn" onClick={() => setShowCart(false)}>
                       ✕
                     </button>
                   </div>
 
                   {cart.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "40px 0" }}>Your cart is empty.</div>
+                    <div style={{ textAlign: "center", padding: "40px 0" }}>{t("cartEmpty")}</div>
                   ) : (
                     <>
                       <div className="cart-list">
@@ -791,22 +968,22 @@ export default function TelegramShopPage() {
 
                       {/* Checkout details Form */}
                       <form onSubmit={handleCheckout}>
-                        <h3 style={{ margin: "20px 0 10px 0" }}>Checkout Details</h3>
+                        <h3 style={{ margin: "20px 0 10px 0" }}>{t("checkoutDetails")}</h3>
 
                         <div className="form-group">
-                          <label>Contact Phone</label>
+                          <label>{t("contactPhone")}</label>
                           <input
                             type="tel"
                             className="form-input"
                             required
-                            placeholder="e.g. 09123456789"
+                            placeholder={t("phonePlaceholder")}
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
                           />
                         </div>
 
                         <div className="form-group">
-                          <label>Region / State</label>
+                          <label>{t("regionState")}</label>
                           <select
                             className="form-input"
                             required
@@ -817,7 +994,7 @@ export default function TelegramShopPage() {
                               setSelectedTownshipId("");
                             }}
                           >
-                            <option value="">Select Region</option>
+                            <option value="">{t("selectRegion")}</option>
                             {regions.map((r) => (
                               <option key={r.id} value={r.id}>
                                 {r.name}
@@ -827,7 +1004,7 @@ export default function TelegramShopPage() {
                         </div>
 
                         <div className="form-group">
-                          <label>City</label>
+                          <label>{t("city")}</label>
                           <select
                             className="form-input"
                             required
@@ -838,7 +1015,7 @@ export default function TelegramShopPage() {
                               setSelectedTownshipId("");
                             }}
                           >
-                            <option value="">Select City</option>
+                            <option value="">{t("selectCity")}</option>
                             {selectedRegion?.cities.map((c) => (
                               <option key={c.id} value={c.id}>
                                 {c.name}
@@ -848,7 +1025,7 @@ export default function TelegramShopPage() {
                         </div>
 
                         <div className="form-group">
-                          <label>Township</label>
+                          <label>{t("township")}</label>
                           <select
                             className="form-input"
                             required
@@ -856,7 +1033,7 @@ export default function TelegramShopPage() {
                             value={selectedTownshipId}
                             onChange={(e) => setSelectedTownshipId(e.target.value)}
                           >
-                            <option value="">Select Township</option>
+                            <option value="">{t("selectTownship")}</option>
                             {selectedCity?.townships.map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
@@ -866,26 +1043,26 @@ export default function TelegramShopPage() {
                         </div>
 
                         <div className="form-group">
-                          <label>Detailed Shipping Address</label>
+                          <label>{t("detailedAddress")}</label>
                           <textarea
                             className="form-input"
                             rows={2}
                             required
-                            placeholder="Street, Building, Apartment No..."
+                            placeholder={t("addressPlaceholder")}
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                           />
                         </div>
 
                         <div className="form-group">
-                          <label>Payment Method</label>
+                          <label>{t("paymentMethod")}</label>
                           <select
                             className="form-input"
                             required
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value as "KBZPAY" | "WAVEPAY" | "COD")}
                           >
-                            <option value="COD">Cash on Delivery (COD)</option>
+                            <option value="COD">{t("cod")}</option>
                             <option value="KBZPAY">KBZPay Transfer</option>
                             <option value="WAVEPAY">WavePay Transfer</option>
                           </select>
@@ -893,11 +1070,11 @@ export default function TelegramShopPage() {
 
                         {paymentMethod !== "COD" && (
                           <div className="form-group">
-                            <label>Transfer Reference Number / Proof Link</label>
+                            <label>{t("transferRef")}</label>
                             <input
                               type="text"
                               className="form-input"
-                              placeholder="Reference / Transaction ID"
+                              placeholder={t("transferRefPlaceholder")}
                               required
                               value={proofUrl}
                               onChange={(e) => setProofUrl(e.target.value)}
@@ -910,21 +1087,23 @@ export default function TelegramShopPage() {
 
                         <div className="total-block">
                           <div className="total-row">
-                            <span>Subtotal</span>
+                            <span>{t("subtotal")}</span>
                             <span>{subtotal.toLocaleString()} Ks</span>
                           </div>
                           <div className="total-row">
-                            <span>Delivery Fee</span>
+                            <span>{t("deliveryFee")}</span>
                             <span>{deliveryFee.toLocaleString()} Ks</span>
                           </div>
                           <div className="total-row grand">
-                            <span>Total</span>
+                            <span>{t("total")}</span>
                             <span>{total.toLocaleString()} Ks</span>
                           </div>
                         </div>
 
                         <button className="btn-submit" type="submit" disabled={checkoutLoading}>
-                          {checkoutLoading ? "Placing Order..." : `Place Order • ${total.toLocaleString()} Ks`}
+                          {checkoutLoading
+                            ? t("placingOrder")
+                            : `${t("placeOrder")} • ${total.toLocaleString()} Ks`}
                         </button>
                       </form>
                     </>

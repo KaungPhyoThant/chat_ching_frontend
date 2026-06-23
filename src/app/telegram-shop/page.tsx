@@ -60,6 +60,11 @@ declare global {
   }
 }
 
+const urlParam = (key: string): string | null =>
+  typeof window === "undefined"
+    ? null
+    : new URLSearchParams(window.location.search).get(key);
+
 export default function TelegramShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -69,7 +74,7 @@ export default function TelegramShopPage() {
   const [activeTab, setActiveTab] = useState<string>("All");
 
   // User and checkout details
-  const [telegramId, setTelegramId] = useState<string>("12345678");
+  const [telegramId, setTelegramId] = useState<string>(() => urlParam("tgId") ?? "12345678");
   const [fullName, setFullName] = useState<string>("Guest User");
   const [username, setUsername] = useState<string>("");
   const [phone, setPhone] = useState("");
@@ -86,6 +91,9 @@ export default function TelegramShopPage() {
 
   // Initialize Telegram WebApp variables
   const [initData, setInitData] = useState<string>("");
+  // Bot-signed fallback identity from the launch URL (?tgId&sig), used when
+  // Telegram supplies no signed initData (ngrok / some desktop launches).
+  const [sig] = useState<string>(() => urlParam("sig") ?? "");
   // Read identity from the Telegram WebApp SDK. We poll instead of relying on the
   // script's onLoad because Telegram's in-app WebView sometimes serves the SDK
   // from cache and never fires onLoad — leaving us stuck as "Guest User" with
@@ -133,13 +141,20 @@ export default function TelegramShopPage() {
     loadData();
   }, []);
 
-  // Fetch cart from backend when initData and products are loaded
+  // Fetch cart from backend when we have an identity (initData or signed tgId)
   useEffect(() => {
-    if (!initData || products.length === 0) return;
+    const hasAuth = initData || (telegramId && sig);
+    if (!hasAuth || products.length === 0) return;
 
     async function loadCart() {
       try {
-        const res = await fetch(`/api/bot/cart?initData=${encodeURIComponent(initData)}`);
+        const q = new URLSearchParams();
+        if (initData) q.set("initData", initData);
+        if (sig) {
+          q.set("tgId", telegramId);
+          q.set("sig", sig);
+        }
+        const res = await fetch(`/api/bot/cart?${q.toString()}`);
         const result = await res.json();
         if (result.success && result.data) {
           const mappedCart: CartItem[] = result.data
@@ -160,7 +175,7 @@ export default function TelegramShopPage() {
       }
     }
     loadCart();
-  }, [initData, products]);
+  }, [initData, sig, telegramId, products]);
 
   // Calculate township delivery fee
   let deliveryFee = 0;
@@ -190,13 +205,15 @@ export default function TelegramShopPage() {
   const total = subtotal + deliveryFee;
 
   const syncCartToBackend = async (newCart: CartItem[]) => {
-    if (!initData) return;
+    if (!initData && !(telegramId && sig)) return;
     try {
       await fetch("/api/bot/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           initData,
+          tgId: telegramId,
+          sig,
           items: newCart.map((i) => ({
             productId: i.id,
             quantity: i.quantity,
@@ -250,6 +267,7 @@ export default function TelegramShopPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           initData,
+          sig,
           telegramId,
           fullName,
           username,
@@ -662,7 +680,7 @@ export default function TelegramShopPage() {
                 {/* ponytail: temporary diagnostic — remove once sync confirmed.
                     If you don't see this line, you're on a stale cached bundle. */}
                 <div style={{ fontSize: "10px", color: "#fa8c16" }}>
-                  dbg: tg={typeof window !== "undefined" && window.Telegram?.WebApp ? "y" : "n"} · initData={initData.length}
+                  dbg: initData={initData.length} · auth={initData || (telegramId && sig) ? "y" : "n"}
                 </div>
               </div>
               <div className="cart-badge-btn" onClick={() => setShowCart(true)}>

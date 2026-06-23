@@ -37,6 +37,14 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+interface OrderHistoryEntry {
+  orderNo: string;
+  status: string;
+  total: number;
+  createdAt: string;
+  items: { name: string; quantity: number; total: number }[];
+}
+
 interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
@@ -112,6 +120,8 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   total: { en: "Total", my: "စုစုပေါင်း" },
   placeOrder: { en: "Place Order", my: "မှာယူမည်" },
   placingOrder: { en: "Placing Order…", my: "မှာယူနေသည်…" },
+  orderHistory: { en: "Order History", my: "မှာယူမှု မှတ်တမ်း" },
+  noOrders: { en: "No orders yet.", my: "မှာယူမှု မရှိသေးပါ။" },
   orderPlaced: { en: "Order Placed!", my: "မှာယူပြီးပါပြီ!" },
   orderNotified: {
     en: "We have notified the shop. This window will close shortly.",
@@ -129,6 +139,9 @@ export default function TelegramShopPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("All");
+  const [showOrders, setShowOrders] = useState(false);
+  const [orders, setOrders] = useState<OrderHistoryEntry[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   // Theme + language (persisted), and catalog filters.
   const [theme, setTheme] = useState<"dark" | "light">(
@@ -255,6 +268,32 @@ export default function TelegramShopPage() {
     }
     loadCart();
   }, [initData, sig, telegramId, products]);
+
+  // Build the auth query (initData, or signed tgId fallback) shared by cart/orders.
+  const authQuery = () => {
+    const q = new URLSearchParams();
+    if (initData) q.set("initData", initData);
+    if (sig) {
+      q.set("tgId", telegramId);
+      q.set("sig", sig);
+    }
+    return q.toString();
+  };
+
+  const openOrders = async () => {
+    setShowOrders(true);
+    setOrdersLoading(true);
+    try {
+      const res = await fetch(`/api/bot/orders?${authQuery()}`);
+      const result = await res.json();
+      setOrders(result?.data ?? []);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to load orders", err);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
 
   // Calculate township delivery fee
   let deliveryFee = 0;
@@ -716,6 +755,23 @@ export default function TelegramShopPage() {
           margin-bottom: 20px;
         }
 
+        .order-card {
+          background: var(--theme-panel);
+          border: 1px solid var(--theme-border);
+          border-radius: 12px;
+          padding: 12px;
+        }
+
+        .order-status {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--theme-accent);
+          background: var(--theme-bg);
+          border: 1px solid var(--theme-border);
+          border-radius: 999px;
+          padding: 2px 8px;
+        }
+
         .total-row {
           display: flex;
           justify-content: space-between;
@@ -840,6 +896,9 @@ export default function TelegramShopPage() {
                 </button>
                 <button className="icon-toggle" onClick={toggleTheme} title="Theme">
                   {theme === "dark" ? "🌙" : "☀️"}
+                </button>
+                <button className="icon-toggle" onClick={openOrders} title={t("orderHistory")}>
+                  📦
                 </button>
                 <div className="cart-badge-btn" onClick={() => setShowCart(true)}>
                   <span>🛒</span>
@@ -1119,6 +1178,51 @@ export default function TelegramShopPage() {
                         </button>
                       </form>
                     </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Order History Modal */}
+            {showOrders && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <span className="modal-title">{t("orderHistory")}</span>
+                    <button className="close-btn" onClick={() => setShowOrders(false)}>
+                      ✕
+                    </button>
+                  </div>
+
+                  {ordersLoading ? (
+                    <div style={{ textAlign: "center", padding: "40px 0" }}>{t("loading")}</div>
+                  ) : orders.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 0" }}>{t("noOrders")}</div>
+                  ) : (
+                    <div className="cart-list">
+                      {orders.map((o) => (
+                        <div key={o.orderNo} className="order-card">
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ fontWeight: 700 }}>#{o.orderNo}</span>
+                            <span className="order-status">{o.status}</span>
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0" }}>
+                            {new Date(o.createdAt).toLocaleDateString()}
+                          </div>
+                          {o.items.map((i, idx) => (
+                            <div
+                              key={idx}
+                              style={{ fontSize: "13px", color: "var(--text-muted)" }}
+                            >
+                              • {i.name} ×{i.quantity} — {i.total.toLocaleString()} Ks
+                            </div>
+                          ))}
+                          <div style={{ textAlign: "right", fontWeight: 700, marginTop: "6px" }}>
+                            {t("total")}: {o.total.toLocaleString()} Ks
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

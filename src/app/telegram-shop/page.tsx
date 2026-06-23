@@ -428,13 +428,25 @@ export default function TelegramShopPage() {
           color: var(--text-color);
         }
 
-        /* Light theme — overrides the design tokens for this subtree. */
+        /* Light theme — overrides the design tokens for this subtree. The cyan
+           accent is too pale on white, so darken it (and its gradient) for
+           readable price text, the logo, and active tabs. */
         .container.light {
           --theme-bg: #ffffff;
           --theme-panel: #f1f5f9;
-          --theme-border: #e2e8f0;
+          --theme-border: #cbd5e1;
           --text-color: #0f172a;
-          --text-muted: #64748b;
+          --text-muted: #475569;
+          --theme-accent: #0369a1;
+          --theme-accent-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        }
+
+        /* Accent-filled controls carry dark text in dark mode; flip to white on
+           the darker light-mode accent gradient so labels stay legible.
+           (.btn-add is excluded — it has a light panel background.) */
+        .container.light .btn-submit,
+        .container.light .category-tab.active {
+          color: #ffffff;
         }
 
         .toolbar {
@@ -627,7 +639,7 @@ export default function TelegramShopPage() {
         }
 
         .modal-content {
-          background: #0f172a;
+          background: var(--theme-bg);
           width: 100%;
           max-height: 85vh;
           border-radius: 24px 24px 0 0;

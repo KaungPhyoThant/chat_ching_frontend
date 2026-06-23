@@ -86,22 +86,22 @@ export default function TelegramShopPage() {
 
   // Initialize Telegram WebApp variables
   const [initData, setInitData] = useState<string>("");
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        tg.ready();
-        tg.expand();
-        if (tg.initData) setInitData(tg.initData);
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-          setTelegramId(String(user.id));
-          setFullName(`${user.first_name} ${user.last_name || ""}`.trim());
-          setUsername(user.username || "");
-        }
-      }
+  // Pull identity from the Telegram WebApp SDK, driven by the script's onLoad.
+  // The previous once-on-mount version raced the SDK script and often ran first,
+  // leaving us as "Guest User" with empty initData so the cart never synced.
+  const initTelegram = () => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+    tg.ready();
+    tg.expand();
+    if (tg.initData) setInitData(tg.initData);
+    const user = tg.initDataUnsafe?.user;
+    if (user) {
+      setTelegramId(String(user.id));
+      setFullName(`${user.first_name} ${user.last_name || ""}`.trim());
+      setUsername(user.username || "");
     }
-  }, []);
+  };
 
   // Fetch products and regions
   useEffect(() => {
@@ -278,7 +278,11 @@ export default function TelegramShopPage() {
 
   return (
     <>
-      <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+      <Script
+        src="https://telegram.org/js/telegram-web-app.js"
+        strategy="afterInteractive"
+        onLoad={initTelegram}
+      />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');

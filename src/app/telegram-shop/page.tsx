@@ -239,6 +239,28 @@ export default function TelegramShopPage() {
       .filter(Boolean)
       .join(" / ");
 
+  // A value is selectable only if some active variant has it AND matches every
+  // OTHER already-picked level — so combos that don't exist (partial matrix)
+  // can't be chosen and never show a wrong/base price.
+  const valueAvailable = (
+    p: Product,
+    opts: VariantOption[],
+    opt: VariantOption,
+    tok: string,
+    picks: Record<string, string>,
+  ) =>
+    (p.variants ?? []).some(
+      (v) =>
+        v.isActive &&
+        v.optionValueIds[opt.idx] === tok &&
+        opts.every(
+          (o) =>
+            o.id === opt.id ||
+            !picks[o.id] ||
+            v.optionValueIds[o.idx] === picks[o.id],
+        ),
+    );
+
   // Theme + language (persisted), and catalog filters.
   const [theme, setTheme] = useState<"dark" | "light">(
     () => persisted("tg-theme", "dark") as "dark" | "light",
@@ -925,6 +947,11 @@ export default function TelegramShopPage() {
           color: #091413;
           font-weight: 600;
         }
+        .variant-chip:disabled {
+          opacity: 0.35;
+          cursor: not-allowed;
+          text-decoration: line-through;
+        }
 
         .order-status {
           font-size: 11px;
@@ -1057,7 +1084,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #5 · variant-fix ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #6 · cascading ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1409,56 +1436,71 @@ export default function TelegramShopPage() {
             )}
 
             {/* Variant picker modal */}
-            {variantModal && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <span className="modal-title">{variantModal.name}</span>
-                    <button className="close-btn" onClick={() => setVariantModal(null)}>
-                      ✕
-                    </button>
-                  </div>
-                  {variantOptions(variantModal).map((opt) => (
-                    <div key={opt.id} style={{ marginBottom: 14 }}>
-                      <div
-                        style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}
-                      >
-                        {opt.name}
+            {variantModal &&
+              (() => {
+                const p = variantModal;
+                const opts = variantOptions(p);
+                const matched = matchVariant(p, variantPick);
+                return (
+                  <div className="modal-overlay">
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <span className="modal-title">{p.name}</span>
+                        <button className="close-btn" onClick={() => setVariantModal(null)}>
+                          ✕
+                        </button>
                       </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {opt.choices.map((c) => (
-                          <button
-                            key={c.tok}
-                            className={`variant-chip ${variantPick[opt.id] === c.tok ? "active" : ""}`}
-                            onClick={() =>
-                              setVariantPick((prev) => ({ ...prev, [opt.id]: c.tok }))
-                            }
+                      {opts.map((opt, oi) => (
+                        <div key={opt.id} style={{ marginBottom: 14 }}>
+                          <div
+                            style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}
                           >
-                            {c.label}
-                          </button>
-                        ))}
+                            {opt.name}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            {opt.choices.map((c) => {
+                              const ok = valueAvailable(p, opts, opt, c.tok, variantPick);
+                              return (
+                                <button
+                                  key={c.tok}
+                                  disabled={!ok}
+                                  className={`variant-chip ${variantPick[opt.id] === c.tok ? "active" : ""}`}
+                                  onClick={() =>
+                                    setVariantPick((prev) => {
+                                      const next = { ...prev, [opt.id]: c.tok };
+                                      // changing a level invalidates later picks
+                                      opts.forEach((o, j) => {
+                                        if (j > oi) delete next[o.id];
+                                      });
+                                      return next;
+                                    })
+                                  }
+                                >
+                                  {c.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="prod-price" style={{ margin: "12px 0" }}>
+                        {(matched?.price ?? p.price).toLocaleString()} Ks
                       </div>
+                      <button
+                        className="btn-submit"
+                        disabled={!matched}
+                        onClick={() => {
+                          if (!matched) return;
+                          addToCart(p, matched, variantLabelOf(p, variantPick));
+                          setVariantModal(null);
+                        }}
+                      >
+                        {t("add")}
+                      </button>
                     </div>
-                  ))}
-                  <div className="prod-price" style={{ margin: "12px 0" }}>
-                    {(matchVariant(variantModal, variantPick)?.price ?? variantModal.price).toLocaleString()}{" "}
-                    Ks
                   </div>
-                  <button
-                    className="btn-submit"
-                    disabled={!matchVariant(variantModal, variantPick)}
-                    onClick={() => {
-                      const v = matchVariant(variantModal, variantPick);
-                      if (!v) return;
-                      addToCart(variantModal, v, variantLabelOf(variantModal, variantPick));
-                      setVariantModal(null);
-                    }}
-                  >
-                    {t("add")}
-                  </button>
-                </div>
-              </div>
-            )}
+                );
+              })()}
           </>
         )}
       </div>

@@ -1084,7 +1084,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #6 · cascading ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #7 · auto-size ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1468,10 +1468,18 @@ export default function TelegramShopPage() {
                                   onClick={() =>
                                     setVariantPick((prev) => {
                                       const next = { ...prev, [opt.id]: c.tok };
-                                      // changing a level invalidates later picks
-                                      opts.forEach((o, j) => {
-                                        if (j > oi) delete next[o.id];
-                                      });
+                                      // changing a level resets later levels, then
+                                      // auto-selects the first still-valid value for
+                                      // each so a price shows without extra taps.
+                                      for (let j = oi + 1; j < opts.length; j++)
+                                        delete next[opts[j].id];
+                                      for (let j = oi + 1; j < opts.length; j++) {
+                                        const o = opts[j];
+                                        const first = o.choices.find((ch) =>
+                                          valueAvailable(p, opts, o, ch.tok, next),
+                                        );
+                                        if (first) next[o.id] = first.tok;
+                                      }
                                       return next;
                                     })
                                   }

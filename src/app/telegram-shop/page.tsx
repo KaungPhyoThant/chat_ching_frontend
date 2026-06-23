@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 
+interface ProductVariant {
+  id: string;
+  sku: string;
+  price: number;
+  stock: number;
+  isActive: boolean;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -11,6 +19,8 @@ interface Product {
   stock: number;
   category: { name: string };
   images?: string[];
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
 }
 
 interface Township {
@@ -35,7 +45,15 @@ interface Region {
 
 interface CartItem extends Product {
   quantity: number;
+  variantId?: string;
+  variantLabel?: string;
 }
+
+// A cart line is identified by its variant when one is chosen, else the product.
+const lineKey = (i: { id: string; variantId?: string }) => i.variantId ?? i.id;
+// Active, user-pickable variants (only meaningful when there's more than one).
+const pickableVariants = (p: Product) =>
+  (p.variants ?? []).filter((v) => v.isActive);
 
 interface OrderHistoryEntry {
   orderNo: string;
@@ -142,6 +160,14 @@ export default function TelegramShopPage() {
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderHistoryEntry[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  // Per-product chosen variant id (only for products with >1 active variant).
+  const [variantSel, setVariantSel] = useState<Record<string, string>>({});
+
+  const chosenVariant = (p: Product): ProductVariant | null => {
+    const vs = pickableVariants(p);
+    if (vs.length < 2) return null;
+    return vs.find((v) => v.id === variantSel[p.id]) ?? vs[0];
+  };
 
   // Theme + language (persisted), and catalog filters.
   const [theme, setTheme] = useState<"dark" | "light">(
@@ -250,14 +276,28 @@ export default function TelegramShopPage() {
         const result = await res.json();
         if (result.success && result.data) {
           const mappedCart: CartItem[] = result.data
-            .map((item: { productId: string; name: string; price: number; quantity: number }) => {
-              const prod = products.find((p) => p.id === item.productId);
-              if (!prod) return null;
-              return {
-                ...prod,
-                quantity: item.quantity,
-              };
-            })
+            .map(
+              (item: {
+                productId: string;
+                name: string;
+                price: number;
+                quantity: number;
+                variantId?: string;
+                variantLabel?: string;
+              }) => {
+                const prod = products.find((p) => p.id === item.productId);
+                if (!prod) return null;
+                // Trust the backend's stored price/name (already variant-aware).
+                return {
+                  ...prod,
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity,
+                  variantId: item.variantId,
+                  variantLabel: item.variantLabel,
+                };
+              },
+            )
             .filter((i: CartItem | null): i is CartItem => i !== null);
           setCart(mappedCart);
         }
@@ -342,6 +382,7 @@ export default function TelegramShopPage() {
           sig,
           items: newCart.map((i) => ({
             productId: i.id,
+            variantId: i.variantId,
             quantity: i.quantity,
           })),
         }),
@@ -353,25 +394,31 @@ export default function TelegramShopPage() {
   };
 
   const addToCart = (product: Product) => {
+    const variant = chosenVariant(product);
+    const line: CartItem = {
+      ...product,
+      price: variant?.price ?? product.price,
+      variantId: variant?.id,
+      variantLabel: variant?.sku,
+      quantity: 1,
+    };
+    const key = lineKey(line);
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      let updated: CartItem[];
-      if (existing) {
-        updated = prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        updated = [...prev, { ...product, quantity: 1 }];
-      }
+      const existing = prev.find((item) => lineKey(item) === key);
+      const updated = existing
+        ? prev.map((item) =>
+            lineKey(item) === key ? { ...item, quantity: item.quantity + 1 } : item,
+          )
+        : [...prev, line];
       syncCartToBackend(updated);
       return updated;
     });
   };
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = (key: string, delta: number) => {
     setCart((prev) => {
       const updated = prev
-        .map((item) => (item.id === id ? { ...item, quantity: item.quantity + delta } : item))
+        .map((item) => (lineKey(item) === key ? { ...item, quantity: item.quantity + delta } : item))
         .filter((item) => item.quantity > 0);
       syncCartToBackend(updated);
       return updated;
@@ -402,7 +449,11 @@ export default function TelegramShopPage() {
           townshipId: selectedTownshipId,
           paymentMethod,
           proofUrl: paymentMethod !== "COD" ? proofUrl || "uploaded_via_miniapp" : undefined,
-          items: cart.map((i) => ({ productId: i.id, quantity: i.quantity })),
+          items: cart.map((i) => ({
+            productId: i.id,
+            variantId: i.variantId,
+            quantity: i.quantity,
+          })),
         }),
       });
 
@@ -1013,7 +1064,25 @@ export default function TelegramShopPage() {
                         <div className="prod-image-placeholder">🛍️</div>
                       )}
                       <h4 className="prod-name">{p.name}</h4>
-                      <div className="prod-price">{p.price.toLocaleString()} Ks</div>
+                      {pickableVariants(p).length > 1 && (
+                        <select
+                          className="form-input"
+                          style={{ marginBottom: "8px" }}
+                          value={variantSel[p.id] ?? pickableVariants(p)[0].id}
+                          onChange={(e) =>
+                            setVariantSel((prev) => ({ ...prev, [p.id]: e.target.value }))
+                          }
+                        >
+                          {pickableVariants(p).map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.sku}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <div className="prod-price">
+                        {(chosenVariant(p)?.price ?? p.price).toLocaleString()} Ks
+                      </div>
                     </div>
                     <button className="btn-add" onClick={() => addToCart(p)}>
                       {t("addToCart")}
@@ -1040,19 +1109,22 @@ export default function TelegramShopPage() {
                     <>
                       <div className="cart-list">
                         {cart.map((item) => (
-                          <div className="cart-row" key={item.id}>
+                          <div className="cart-row" key={lineKey(item)}>
                             <div>
-                              <div style={{ fontWeight: 600 }}>{item.name}</div>
+                              <div style={{ fontWeight: 600 }}>
+                                {item.name}
+                                {item.variantLabel ? ` (${item.variantLabel})` : ""}
+                              </div>
                               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                                 {item.price.toLocaleString()} Ks
                               </div>
                             </div>
                             <div className="cart-qty-ctrl">
-                              <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>
+                              <button className="qty-btn" onClick={() => updateQuantity(lineKey(item), -1)}>
                                 -
                               </button>
                               <span>{item.quantity}</span>
-                              <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>
+                              <button className="qty-btn" onClick={() => updateQuantity(lineKey(item), 1)}>
                                 +
                               </button>
                             </div>

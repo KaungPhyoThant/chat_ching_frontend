@@ -5,10 +5,12 @@ import {
   Alert,
   App,
   Button,
+  Col,
   Form,
   Input,
   InputNumber,
   Modal,
+  Row,
   Select,
   Space,
   Switch,
@@ -149,26 +151,40 @@ export function ProductFormModal({ open, onClose, product }: Props) {
 
   const generalTab = (
     <>
-      <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-        <Input placeholder="Product name" />
-      </Form.Item>
-      <Form.Item name="sku" label="SKU" rules={[{ required: true }]}>
-        <Input placeholder="SKU-0001" />
-      </Form.Item>
-      <Form.Item name="categoryId" label="Category" rules={[{ required: true }]}>
-        <Select options={categoryOptions} placeholder="Select category" showSearch optionFilterProp="label" />
-      </Form.Item>
-      <Form.Item name="price" label={`Price (${showMultiCurrency ? baseCurrency : "Ks"})`} rules={[{ required: true }]}>
-        <InputNumber min={0} step={500} style={{ width: "100%" }} />
-      </Form.Item>
-      <Form.Item name="stock" label="Stock" rules={[{ required: true }]}>
-        <InputNumber min={0} style={{ width: "100%" }} />
-      </Form.Item>
+      <Row gutter={16}>
+        <Col xs={24} sm={12}>
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+            <Input placeholder="Product name" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name="sku" label="SKU" rules={[{ required: true }]}>
+            <Input placeholder="SKU-0001" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name="categoryId" label="Category" rules={[{ required: true }]}>
+            <Select options={categoryOptions} placeholder="Select category" showSearch optionFilterProp="label" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name="price" label={`Price (${showMultiCurrency ? baseCurrency : "Ks"})`} rules={[{ required: true }]}>
+            <InputNumber min={0} step={500} style={{ width: "100%" }} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name="stock" label="Stock" rules={[{ required: true }]}>
+            <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name="isActive" label="Active" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+        </Col>
+      </Row>
       <Form.Item name="description" label="Description">
         <Input.TextArea rows={2} placeholder="Short description" />
-      </Form.Item>
-      <Form.Item name="isActive" label="Active" valuePropName="checked">
-        <Switch />
       </Form.Item>
     </>
   );

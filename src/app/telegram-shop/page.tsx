@@ -892,7 +892,7 @@ export default function TelegramShopPage() {
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
-                  {lang === "en" ? "🇬🇧 EN" : "🇲🇲 မြန်မာ"}
+                  {lang === "en" ? "🇬🇧 ENG" : "🇲🇲 MM"}
                 </button>
                 <button className="icon-toggle" onClick={toggleTheme} title="Theme">
                   {theme === "dark" ? "🌙" : "☀️"}

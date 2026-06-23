@@ -64,29 +64,53 @@ interface CartItem extends Product {
 // A cart line is identified by its variant when one is chosen, else the product.
 const lineKey = (i: { id: string; variantId?: string }) => i.variantId ?? i.id;
 
-// Option types that actually have values, ordered by level (Color, then Size…).
-const optionTypesOf = (p: Product) =>
-  [...(p.optionTypes ?? [])]
-    .filter((ot) => ot.values?.length)
-    .sort((a, b) => a.level - b.level);
+// Build the pickable options per level, deriving the value tokens from the
+// variants themselves — the admin editor leaves optionTypes[].values empty and
+// stores the raw value in each variant's optionValueIds[level-1]. We still map a
+// token to a friendly label via optionTypes[].values when those exist.
+interface VariantOption {
+  id: string;
+  name: string;
+  idx: number;
+  choices: { tok: string; label: string }[];
+}
+const variantOptions = (p: Product): VariantOption[] => {
+  const types = [...(p.optionTypes ?? [])].sort((a, b) => a.level - b.level);
+  const vars = (p.variants ?? []).filter((v) => v.isActive);
+  return types
+    .map((ot, idx) => {
+      const tokens = Array.from(
+        new Set(vars.map((v) => v.optionValueIds[idx]).filter(Boolean)),
+      );
+      return {
+        id: ot.id,
+        name: ot.name,
+        idx,
+        choices: tokens.map((tok) => ({
+          tok,
+          label: ot.values?.find((val) => val.id === tok)?.value ?? tok,
+        })),
+      };
+    })
+    .filter((o) => o.choices.length > 0);
+};
 
 // True when the product needs a variant choice before adding to cart.
 const hasVariantChoice = (p: Product) =>
-  optionTypesOf(p).length > 0 && (p.variants?.length ?? 0) > 0;
+  variantOptions(p).length > 0 &&
+  (p.variants?.filter((v) => v.isActive).length ?? 0) > 0;
 
-// Resolve the variant matching one picked value per option type.
+// Resolve the variant matching one picked token per option level.
 const matchVariant = (
   p: Product,
   picks: Record<string, string>,
 ): ProductVariant | null => {
-  const ids = Object.values(picks);
-  if (ids.length !== optionTypesOf(p).length) return null;
+  const opts = variantOptions(p);
+  const wanted = opts.map((o) => picks[o.id]);
+  if (wanted.some((w) => !w)) return null;
   return (
     (p.variants ?? []).find(
-      (v) =>
-        v.isActive &&
-        v.optionValueIds.length === ids.length &&
-        ids.every((id) => v.optionValueIds.includes(id)),
+      (v) => v.isActive && opts.every((o, i) => v.optionValueIds[o.idx] === wanted[i]),
     ) ?? null
   );
 };
@@ -210,8 +234,8 @@ export default function TelegramShopPage() {
 
   /** Human label for a resolved variant, e.g. "Red / Large". */
   const variantLabelOf = (p: Product, picks: Record<string, string>) =>
-    optionTypesOf(p)
-      .map((ot) => ot.values.find((v) => v.id === picks[ot.id])?.value)
+    variantOptions(p)
+      .map((o) => o.choices.find((c) => c.tok === picks[o.id])?.label)
       .filter(Boolean)
       .join(" / ");
 
@@ -1033,7 +1057,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #4 · variants ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #5 · variant-fix ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1394,23 +1418,23 @@ export default function TelegramShopPage() {
                       ✕
                     </button>
                   </div>
-                  {optionTypesOf(variantModal).map((ot) => (
-                    <div key={ot.id} style={{ marginBottom: 14 }}>
+                  {variantOptions(variantModal).map((opt) => (
+                    <div key={opt.id} style={{ marginBottom: 14 }}>
                       <div
                         style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}
                       >
-                        {ot.name}
+                        {opt.name}
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {ot.values.map((val) => (
+                        {opt.choices.map((c) => (
                           <button
-                            key={val.id}
-                            className={`variant-chip ${variantPick[ot.id] === val.id ? "active" : ""}`}
+                            key={c.tok}
+                            className={`variant-chip ${variantPick[opt.id] === c.tok ? "active" : ""}`}
                             onClick={() =>
-                              setVariantPick((prev) => ({ ...prev, [ot.id]: val.id }))
+                              setVariantPick((prev) => ({ ...prev, [opt.id]: c.tok }))
                             }
                           >
-                            {val.value}
+                            {c.label}
                           </button>
                         ))}
                       </div>

@@ -13,9 +13,55 @@ interface Props {
 
 const uid = (p: string) => `${p}_${Math.random().toString(36).slice(2, 8)}`;
 
+/** Cartesian product of per-level value lists → every combination. */
+const cartesian = (lists: string[][]): string[][] =>
+  lists.reduce<string[][]>(
+    (acc, list) => acc.flatMap((combo) => list.map((v) => [...combo, v])),
+    [[]],
+  );
+
+const parseValues = (text: string) =>
+  text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 export function VariantTreeEditor({ optionTypes, variants, onChange }: Props) {
   // Show Level 1 by default; reveal more with "Add level" (max 3).
   const [levelCount, setLevelCount] = useState(Math.max(1, optionTypes.length));
+  // Comma-separated value lists per level, used by "Generate combinations".
+  const [valuesText, setValuesText] = useState<Record<number, string>>({});
+
+  const levelLists = Array.from({ length: levelCount }, (_, i) =>
+    parseValues(valuesText[i + 1] ?? ""),
+  );
+  const canGenerate = levelLists.every((l) => l.length > 0);
+
+  // Build a variant per combination; keep existing rows (price/stock) when the
+  // same combo already exists, so re-generating never wipes entered data.
+  const generateCombinations = () => {
+    const combos = cartesian(levelLists);
+    const next: ProductVariant[] = combos.map((combo) => {
+      const existing = variants.find(
+        (v) =>
+          v.optionValueIds.length === combo.length &&
+          combo.every((c, i) => v.optionValueIds[i] === c),
+      );
+      return (
+        existing ?? {
+          id: uid("var"),
+          productId: variants[0]?.productId ?? "",
+          sku: uid("SKU"),
+          optionValueIds: combo,
+          price: 0,
+          stock: 0,
+          isActive: true,
+          tiers: [],
+        }
+      );
+    });
+    onChange({ optionTypes, variants: next });
+  };
 
   const removeLevel = (level: number) => {
     const newCount = Math.max(1, levelCount - 1);
@@ -95,6 +141,39 @@ export function VariantTreeEditor({ optionTypes, variants, onChange }: Props) {
               )}
             </div>
           ))}
+        </Space>
+      </Card>
+
+      <Card size="small" title="Generate combinations">
+        <Space orientation="vertical" style={{ width: "100%" }}>
+          {Array.from({ length: levelCount }, (_, i) => i + 1).map((level) => (
+            <div key={level} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Typography.Text type="secondary" style={{ width: 64, flexShrink: 0 }}>
+                {optionTypes.find((o) => o.level === level)?.name || `Level ${level}`}
+              </Typography.Text>
+              <Input
+                placeholder={
+                  level === 1 ? "White, Black, Brown" : "Small, Medium, Large"
+                }
+                value={valuesText[level] ?? ""}
+                onChange={(e) =>
+                  setValuesText((prev) => ({ ...prev, [level]: e.target.value }))
+                }
+              />
+            </div>
+          ))}
+          <Button
+            type="dashed"
+            block
+            disabled={!canGenerate}
+            onClick={generateCombinations}
+          >
+            Generate {canGenerate ? levelLists.reduce((n, l) => n * l.length, 1) : ""}{" "}
+            variants
+          </Button>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Comma-separated values per level. Existing combos keep their price/stock.
+          </Typography.Text>
         </Space>
       </Card>
 

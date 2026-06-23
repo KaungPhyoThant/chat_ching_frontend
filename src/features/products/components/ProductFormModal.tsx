@@ -190,6 +190,27 @@ export function ProductFormModal({ open, onClose, product }: Props) {
     </>
   );
 
+  // Friendly label for a variant from its option values (e.g. "Black / Large").
+  const variantLabel = (v: ProductVariant) =>
+    v.optionValueIds
+      .map((id) => {
+        for (const ot of optionTypes) {
+          const val = ot.values?.find((x) => x.id === id);
+          if (val) return val.value;
+        }
+        return id;
+      })
+      .filter(Boolean)
+      .join(" / ");
+
+  const patchVariantTiers = (
+    vid: string,
+    fn: (tiers: PriceTier[]) => PriceTier[],
+  ) =>
+    setVariants((prev) =>
+      prev.map((v) => (v.id === vid ? { ...v, tiers: fn(v.tiers ?? []) } : v)),
+    );
+
   const pricingTab = (
     <Space orientation="vertical" style={{ width: "100%" }} size="large">
       {showMultiCurrency && (
@@ -207,46 +228,104 @@ export function ProductFormModal({ open, onClose, product }: Props) {
       {showTiered && (
         <div>
           <div style={{ marginBottom: 6, fontWeight: 500 }}>
-            Volume price breaks {hasExplicitVariants ? "(base — per-variant tiers via Variants tab)" : ""}
+            Volume price breaks {hasExplicitVariants ? "(per variant)" : ""}
           </div>
-          <Space orientation="vertical" style={{ width: "100%" }}>
-            {baseTiers.length === 0 && (
-              <span style={{ color: "var(--app-text-muted)" }}>No tiers — buyers pay the base price.</span>
-            )}
-            {baseTiers.map((t) => (
-              <Space key={t.id} align="center">
-                <span style={{ color: "var(--app-text-muted)" }}>Qty ≥</span>
-                <InputNumber
-                  min={1}
-                  value={t.minQty}
-                  onChange={(n) =>
-                    setBaseTiers((prev) => prev.map((x) => (x.id === t.id ? { ...x, minQty: n ?? 1 } : x)))
-                  }
-                />
-                <span style={{ color: "var(--app-text-muted)" }}>Price</span>
-                <InputNumber
-                  min={0}
-                  value={t.price}
-                  onChange={(n) =>
-                    setBaseTiers((prev) => prev.map((x) => (x.id === t.id ? { ...x, price: n ?? 0 } : x)))
-                  }
-                />
-                <Button
-                  type="text"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => setBaseTiers((prev) => prev.filter((x) => x.id !== t.id))}
-                />
-              </Space>
-            ))}
-            <Button
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={() => setBaseTiers((prev) => [...prev, { id: uid("tier"), minQty: 10, price: 0 }])}
-            >
-              Add tier
-            </Button>
-          </Space>
+          {hasExplicitVariants ? (
+            <Space orientation="vertical" style={{ width: "100%" }} size="middle">
+              {variants.map((v) => (
+                <div key={v.id}>
+                  <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                    {variantLabel(v) || v.sku}
+                  </div>
+                  <Space orientation="vertical" style={{ width: "100%" }}>
+                    {(v.tiers ?? []).map((t) => (
+                      <Space key={t.id} align="center">
+                        <span style={{ color: "var(--app-text-muted)" }}>Qty ≥</span>
+                        <InputNumber
+                          min={2}
+                          value={t.minQty}
+                          onChange={(n) =>
+                            patchVariantTiers(v.id, (ts) =>
+                              ts.map((x) => (x.id === t.id ? { ...x, minQty: n ?? 2 } : x)),
+                            )
+                          }
+                        />
+                        <span style={{ color: "var(--app-text-muted)" }}>Price</span>
+                        <InputNumber
+                          min={0}
+                          value={t.price}
+                          onChange={(n) =>
+                            patchVariantTiers(v.id, (ts) =>
+                              ts.map((x) => (x.id === t.id ? { ...x, price: n ?? 0 } : x)),
+                            )
+                          }
+                        />
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() =>
+                            patchVariantTiers(v.id, (ts) => ts.filter((x) => x.id !== t.id))
+                          }
+                        />
+                      </Space>
+                    ))}
+                    <Button
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() =>
+                        patchVariantTiers(v.id, (ts) => [
+                          ...ts,
+                          { id: uid("tier"), minQty: 10, price: v.price },
+                        ])
+                      }
+                    >
+                      Add tier
+                    </Button>
+                  </Space>
+                </div>
+              ))}
+            </Space>
+          ) : (
+            <Space orientation="vertical" style={{ width: "100%" }}>
+              {baseTiers.length === 0 && (
+                <span style={{ color: "var(--app-text-muted)" }}>No tiers — buyers pay the base price.</span>
+              )}
+              {baseTiers.map((t) => (
+                <Space key={t.id} align="center">
+                  <span style={{ color: "var(--app-text-muted)" }}>Qty ≥</span>
+                  <InputNumber
+                    min={1}
+                    value={t.minQty}
+                    onChange={(n) =>
+                      setBaseTiers((prev) => prev.map((x) => (x.id === t.id ? { ...x, minQty: n ?? 1 } : x)))
+                    }
+                  />
+                  <span style={{ color: "var(--app-text-muted)" }}>Price</span>
+                  <InputNumber
+                    min={0}
+                    value={t.price}
+                    onChange={(n) =>
+                      setBaseTiers((prev) => prev.map((x) => (x.id === t.id ? { ...x, price: n ?? 0 } : x)))
+                    }
+                  />
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => setBaseTiers((prev) => prev.filter((x) => x.id !== t.id))}
+                  />
+                </Space>
+              ))}
+              <Button
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => setBaseTiers((prev) => [...prev, { id: uid("tier"), minQty: 10, price: 0 }])}
+              >
+                Add tier
+              </Button>
+            </Space>
+          )}
         </div>
       )}
 

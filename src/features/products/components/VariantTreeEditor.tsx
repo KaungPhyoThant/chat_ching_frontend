@@ -103,9 +103,6 @@ export function VariantTreeEditor({ optionTypes, variants, onChange }: Props) {
   const removeVariant = (id: string) =>
     onChange({ optionTypes, variants: variants.filter((v) => v.id !== id) });
 
-  const setTiers = (v: ProductVariant, tiers: ProductVariant["tiers"]) =>
-    updateVariant(v.id, { tiers });
-
   return (
     <Space orientation="vertical" style={{ width: "100%" }} size="middle">
       <Card
@@ -193,124 +190,50 @@ export function VariantTreeEditor({ optionTypes, variants, onChange }: Props) {
           {variants.length === 0 && (
             <Typography.Text type="secondary">No variants yet.</Typography.Text>
           )}
-          {variants.map((raw) => {
-            // Variants loaded from the DB may predate tiers — normalise to [].
-            const v = { ...raw, tiers: raw.tiers ?? [] };
-            return (
-            <div
-              key={v.id}
-              style={{ borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: 8 }}
-            >
-              <Space wrap>
-                <Input
-                  style={{ width: 120 }}
-                  placeholder="SKU"
-                  value={v.sku}
-                  onChange={(e) => updateVariant(v.id, { sku: e.target.value })}
-                />
-                {Array.from({ length: levelCount }, (_, i) => i).map((idx) => {
-                  const levelName = optionTypes.find((o) => o.level === idx + 1)?.name;
-                  return (
-                    <Input
-                      key={idx}
-                      style={{ width: 120 }}
-                      placeholder={levelName || `Level ${idx + 1}`}
-                      value={v.optionValueIds[idx] ?? ""}
-                      onChange={(e) => {
-                        const next = [...v.optionValueIds];
-                        next[idx] = e.target.value;
-                        updateVariant(v.id, { optionValueIds: next });
-                      }}
-                    />
-                  );
-                })}
-                <InputNumber
-                  placeholder="Price"
-                  value={v.price}
-                  min={0}
-                  onChange={(n) => updateVariant(v.id, { price: n ?? 0 })}
-                />
-                <InputNumber
-                  placeholder="Stock"
-                  value={v.stock}
-                  min={0}
-                  onChange={(n) => updateVariant(v.id, { stock: n ?? 0 })}
-                />
-                <Button
-                  type="text"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => removeVariant(v.id)}
-                />
-              </Space>
-
-              {/* Per-variant volume tiers — "buy N+ for X". */}
-              <div style={{ marginTop: 6, paddingLeft: 8 }}>
-                {v.tiers.map((t) => (
-                  <Space key={t.id} wrap style={{ marginBottom: 4 }}>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      Qty ≥
-                    </Typography.Text>
-                    <InputNumber
-                      size="small"
-                      min={2}
-                      value={t.minQty}
-                      onChange={(n) =>
-                        setTiers(
-                          v,
-                          v.tiers.map((x) =>
-                            x.id === t.id ? { ...x, minQty: n ?? 2 } : x,
-                          ),
-                        )
-                      }
-                    />
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      Price
-                    </Typography.Text>
-                    <InputNumber
-                      size="small"
-                      min={0}
-                      value={t.price}
-                      onChange={(n) =>
-                        setTiers(
-                          v,
-                          v.tiers.map((x) =>
-                            x.id === t.id ? { ...x, price: n ?? 0 } : x,
-                          ),
-                        )
-                      }
-                    />
-                    <Button
-                      size="small"
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() =>
-                        setTiers(
-                          v,
-                          v.tiers.filter((x) => x.id !== t.id),
-                        )
-                      }
-                    />
-                  </Space>
-                ))}
-                <Button
-                  size="small"
-                  type="dashed"
-                  icon={<PlusOutlined />}
-                  onClick={() =>
-                    setTiers(v, [
-                      ...v.tiers,
-                      { id: uid("tier"), minQty: 10, price: v.price },
-                    ])
-                  }
-                >
-                  Add volume tier
-                </Button>
-              </div>
-            </div>
-            );
-          })}
+          {variants.map((v) => (
+            <Space key={v.id} wrap>
+              <Input
+                style={{ width: 120 }}
+                placeholder="SKU"
+                value={v.sku}
+                onChange={(e) => updateVariant(v.id, { sku: e.target.value })}
+              />
+              {Array.from({ length: levelCount }, (_, i) => i).map((idx) => {
+                const levelName = optionTypes.find((o) => o.level === idx + 1)?.name;
+                return (
+                  <Input
+                    key={idx}
+                    style={{ width: 120 }}
+                    placeholder={levelName || `Level ${idx + 1}`}
+                    value={v.optionValueIds[idx] ?? ""}
+                    onChange={(e) => {
+                      const next = [...v.optionValueIds];
+                      next[idx] = e.target.value;
+                      updateVariant(v.id, { optionValueIds: next });
+                    }}
+                  />
+                );
+              })}
+              <InputNumber
+                placeholder="Price"
+                value={v.price}
+                min={0}
+                onChange={(n) => updateVariant(v.id, { price: n ?? 0 })}
+              />
+              <InputNumber
+                placeholder="Stock"
+                value={v.stock}
+                min={0}
+                onChange={(n) => updateVariant(v.id, { stock: n ?? 0 })}
+              />
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => removeVariant(v.id)}
+              />
+            </Space>
+          ))}
         </Space>
       </Card>
     </Space>

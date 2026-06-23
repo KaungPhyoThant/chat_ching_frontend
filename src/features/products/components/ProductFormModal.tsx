@@ -23,6 +23,7 @@ import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useFeature } from "@/lib/features/useFeature";
 import { useCreateProduct, useUpdateProduct } from "../hooks/useProducts";
 import { VariantTreeEditor } from "./VariantTreeEditor";
+import { MarkdownEditor } from "./MarkdownEditor";
 import type { Product, ProductOptionType, ProductVariant } from "../types";
 import type { CurrencyCode, PriceTier } from "@/features/pricing/types";
 
@@ -184,7 +185,7 @@ export function ProductFormModal({ open, onClose, product }: Props) {
         </Col>
       </Row>
       <Form.Item name="description" label="Description">
-        <Input.TextArea rows={2} placeholder="Short description" />
+        <MarkdownEditor />
       </Form.Item>
     </>
   );

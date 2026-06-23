@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import { mdToHtml } from "@/lib/markdown";
 
 interface OptionValue {
   id: string;
@@ -1106,7 +1107,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #9 · detail+var ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #10 · md-desc ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1502,11 +1503,10 @@ export default function TelegramShopPage() {
                             fontSize: 14,
                             color: "var(--text-muted)",
                             marginBottom: 12,
-                            whiteSpace: "pre-wrap",
+                            lineHeight: 1.5,
                           }}
-                        >
-                          {p.description}
-                        </div>
+                          dangerouslySetInnerHTML={{ __html: mdToHtml(p.description) }}
+                        />
                       )}
 
                       {opts.map((opt, oi) => (

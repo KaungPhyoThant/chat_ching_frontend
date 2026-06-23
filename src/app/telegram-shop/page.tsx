@@ -3,12 +3,23 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 
+interface OptionValue {
+  id: string;
+  value: string;
+}
+interface OptionType {
+  id: string;
+  name: string;
+  level: number;
+  values: OptionValue[];
+}
 interface ProductVariant {
   id: string;
   sku: string;
   price: number;
   stock: number;
   isActive: boolean;
+  optionValueIds: string[];
 }
 
 interface Product {
@@ -21,6 +32,7 @@ interface Product {
   images?: string[];
   hasVariants?: boolean;
   variants?: ProductVariant[];
+  optionTypes?: OptionType[];
 }
 
 interface Township {
@@ -51,9 +63,33 @@ interface CartItem extends Product {
 
 // A cart line is identified by its variant when one is chosen, else the product.
 const lineKey = (i: { id: string; variantId?: string }) => i.variantId ?? i.id;
-// Active, user-pickable variants (only meaningful when there's more than one).
-const pickableVariants = (p: Product) =>
-  (p.variants ?? []).filter((v) => v.isActive);
+
+// Option types that actually have values, ordered by level (Color, then Size…).
+const optionTypesOf = (p: Product) =>
+  [...(p.optionTypes ?? [])]
+    .filter((ot) => ot.values?.length)
+    .sort((a, b) => a.level - b.level);
+
+// True when the product needs a variant choice before adding to cart.
+const hasVariantChoice = (p: Product) =>
+  optionTypesOf(p).length > 0 && (p.variants?.length ?? 0) > 0;
+
+// Resolve the variant matching one picked value per option type.
+const matchVariant = (
+  p: Product,
+  picks: Record<string, string>,
+): ProductVariant | null => {
+  const ids = Object.values(picks);
+  if (ids.length !== optionTypesOf(p).length) return null;
+  return (
+    (p.variants ?? []).find(
+      (v) =>
+        v.isActive &&
+        v.optionValueIds.length === ids.length &&
+        ids.every((id) => v.optionValueIds.includes(id)),
+    ) ?? null
+  );
+};
 
 interface OrderHistoryEntry {
   orderNo: string;
@@ -107,6 +143,9 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   loading: { en: "Loading catalog…", my: "ပစ္စည်းများ ဖွင့်နေသည်…" },
   noProducts: { en: "No products found.", my: "ပစ္စည်း မတွေ့ပါ။" },
   addToCart: { en: "+ Add to Cart", my: "+ ခြင်းထဲထည့်" },
+  from: { en: "from", my: "စ" },
+  chooseOptions: { en: "Choose options", my: "ရွေးချယ်ပါ" },
+  add: { en: "Add to Cart", my: "ခြင်းထဲ ထည့်မည်" },
   shoppingCart: { en: "Shopping Cart", my: "ဈေးခြင်း" },
   cartEmpty: { en: "Your cart is empty.", my: "ဈေးခြင်း ဗလာဖြစ်နေသည်။" },
   checkoutDetails: { en: "Checkout Details", my: "မှာယူမှု အချက်အလက်" },
@@ -160,14 +199,21 @@ export default function TelegramShopPage() {
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderHistoryEntry[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  // Per-product chosen variant id (only for products with >1 active variant).
-  const [variantSel, setVariantSel] = useState<Record<string, string>>({});
+  // Variant picker modal: which product, and the chosen value per option type.
+  const [variantModal, setVariantModal] = useState<Product | null>(null);
+  const [variantPick, setVariantPick] = useState<Record<string, string>>({});
 
-  const chosenVariant = (p: Product): ProductVariant | null => {
-    const vs = pickableVariants(p);
-    if (vs.length < 2) return null;
-    return vs.find((v) => v.id === variantSel[p.id]) ?? vs[0];
+  const openVariantModal = (p: Product) => {
+    setVariantPick({});
+    setVariantModal(p);
   };
+
+  /** Human label for a resolved variant, e.g. "Red / Large". */
+  const variantLabelOf = (p: Product, picks: Record<string, string>) =>
+    optionTypesOf(p)
+      .map((ot) => ot.values.find((v) => v.id === picks[ot.id])?.value)
+      .filter(Boolean)
+      .join(" / ");
 
   // Theme + language (persisted), and catalog filters.
   const [theme, setTheme] = useState<"dark" | "light">(
@@ -383,6 +429,7 @@ export default function TelegramShopPage() {
           items: newCart.map((i) => ({
             productId: i.id,
             variantId: i.variantId,
+            variantLabel: i.variantLabel,
             quantity: i.quantity,
           })),
         }),
@@ -393,13 +440,16 @@ export default function TelegramShopPage() {
     }
   };
 
-  const addToCart = (product: Product) => {
-    const variant = chosenVariant(product);
+  const addToCart = (
+    product: Product,
+    variant?: ProductVariant,
+    label?: string,
+  ) => {
     const line: CartItem = {
       ...product,
       price: variant?.price ?? product.price,
       variantId: variant?.id,
-      variantLabel: variant?.sku,
+      variantLabel: label || variant?.sku,
       quantity: 1,
     };
     const key = lineKey(line);
@@ -452,6 +502,7 @@ export default function TelegramShopPage() {
           items: cart.map((i) => ({
             productId: i.id,
             variantId: i.variantId,
+            variantLabel: i.variantLabel,
             quantity: i.quantity,
           })),
         }),
@@ -833,6 +884,24 @@ export default function TelegramShopPage() {
           padding: 12px;
         }
 
+        .variant-chip {
+          background: var(--theme-panel);
+          border: 1px solid var(--theme-border);
+          color: var(--text-color);
+          border-radius: 999px;
+          padding: 7px 16px;
+          font-size: 14px;
+          font-family: inherit;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .variant-chip.active {
+          background: var(--theme-accent-gradient);
+          border-color: transparent;
+          color: #091413;
+          font-weight: 600;
+        }
+
         .order-status {
           font-size: 11px;
           font-weight: 600;
@@ -1064,27 +1133,17 @@ export default function TelegramShopPage() {
                         <div className="prod-image-placeholder">🛍️</div>
                       )}
                       <h4 className="prod-name">{p.name}</h4>
-                      {pickableVariants(p).length > 1 && (
-                        <select
-                          className="form-input"
-                          style={{ marginBottom: "8px" }}
-                          value={variantSel[p.id] ?? pickableVariants(p)[0].id}
-                          onChange={(e) =>
-                            setVariantSel((prev) => ({ ...prev, [p.id]: e.target.value }))
-                          }
-                        >
-                          {pickableVariants(p).map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.sku}
-                            </option>
-                          ))}
-                        </select>
-                      )}
                       <div className="prod-price">
-                        {(chosenVariant(p)?.price ?? p.price).toLocaleString()} Ks
+                        {hasVariantChoice(p) ? `${t("from")} ` : ""}
+                        {p.price.toLocaleString()} Ks
                       </div>
                     </div>
-                    <button className="btn-add" onClick={() => addToCart(p)}>
+                    <button
+                      className="btn-add"
+                      onClick={() =>
+                        hasVariantChoice(p) ? openVariantModal(p) : addToCart(p)
+                      }
+                    >
                       {t("addToCart")}
                     </button>
                   </div>
@@ -1319,6 +1378,58 @@ export default function TelegramShopPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Variant picker modal */}
+            {variantModal && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <span className="modal-title">{variantModal.name}</span>
+                    <button className="close-btn" onClick={() => setVariantModal(null)}>
+                      ✕
+                    </button>
+                  </div>
+                  {optionTypesOf(variantModal).map((ot) => (
+                    <div key={ot.id} style={{ marginBottom: 14 }}>
+                      <div
+                        style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}
+                      >
+                        {ot.name}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {ot.values.map((val) => (
+                          <button
+                            key={val.id}
+                            className={`variant-chip ${variantPick[ot.id] === val.id ? "active" : ""}`}
+                            onClick={() =>
+                              setVariantPick((prev) => ({ ...prev, [ot.id]: val.id }))
+                            }
+                          >
+                            {val.value}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="prod-price" style={{ margin: "12px 0" }}>
+                    {(matchVariant(variantModal, variantPick)?.price ?? variantModal.price).toLocaleString()}{" "}
+                    Ks
+                  </div>
+                  <button
+                    className="btn-submit"
+                    disabled={!matchVariant(variantModal, variantPick)}
+                    onClick={() => {
+                      const v = matchVariant(variantModal, variantPick);
+                      if (!v) return;
+                      addToCart(variantModal, v, variantLabelOf(variantModal, variantPick));
+                      setVariantModal(null);
+                    }}
+                  >
+                    {t("add")}
+                  </button>
                 </div>
               </div>
             )}

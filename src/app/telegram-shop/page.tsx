@@ -123,6 +123,35 @@ export default function TelegramShopPage() {
     loadData();
   }, []);
 
+  // Fetch cart from backend when initData and products are loaded
+  useEffect(() => {
+    if (!initData || products.length === 0) return;
+
+    async function loadCart() {
+      try {
+        const res = await fetch(`/api/bot/cart?initData=${encodeURIComponent(initData)}`);
+        const result = await res.json();
+        if (result.success && result.data) {
+          const mappedCart: CartItem[] = result.data
+            .map((item: { productId: string; name: string; price: number; quantity: number }) => {
+              const prod = products.find((p) => p.id === item.productId);
+              if (!prod) return null;
+              return {
+                ...prod,
+                quantity: item.quantity,
+              };
+            })
+            .filter((i: CartItem | null): i is CartItem => i !== null);
+          setCart(mappedCart);
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to load cart from backend", err);
+      }
+    }
+    loadCart();
+  }, [initData, products]);
+
   // Calculate township delivery fee
   let deliveryFee = 0;
   if (selectedTownshipId) {
@@ -150,24 +179,50 @@ export default function TelegramShopPage() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = subtotal + deliveryFee;
 
+  const syncCartToBackend = async (newCart: CartItem[]) => {
+    if (!initData) return;
+    try {
+      await fetch("/api/bot/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          initData,
+          items: newCart.map((i) => ({
+            productId: i.id,
+            quantity: i.quantity,
+          })),
+        }),
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to sync cart to backend", err);
+    }
+  };
+
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
+      let updated: CartItem[];
       if (existing) {
-        return prev.map((item) =>
+        updated = prev.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
+      } else {
+        updated = [...prev, { ...product, quantity: 1 }];
       }
-      return [...prev, { ...product, quantity: 1 }];
+      syncCartToBackend(updated);
+      return updated;
     });
   };
 
   const updateQuantity = (id: string, delta: number) => {
-    setCart((prev) =>
-      prev
+    setCart((prev) => {
+      const updated = prev
         .map((item) => (item.id === id ? { ...item, quantity: item.quantity + delta } : item))
-        .filter((item) => item.quantity > 0)
-    );
+        .filter((item) => item.quantity > 0);
+      syncCartToBackend(updated);
+      return updated;
+    });
   };
 
   const handleCheckout = async (e: React.FormEvent) => {

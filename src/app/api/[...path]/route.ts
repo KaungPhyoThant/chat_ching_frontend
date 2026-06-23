@@ -10,7 +10,8 @@ async function handle(request: Request, context: RouteContext) {
   const isPublicBotRoute =
     apiPath.startsWith("/bot/products") ||
     apiPath.startsWith("/bot/delivery-regions") ||
-    apiPath.startsWith("/bot/mini-app-checkout");
+    apiPath.startsWith("/bot/mini-app-checkout") ||
+    apiPath.startsWith("/bot/cart");
 
   return proxyToBackend(request, apiPath, { requireAuth: !isPublicBotRoute });
 }

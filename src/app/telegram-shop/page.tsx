@@ -250,6 +250,7 @@ export default function TelegramShopPage() {
           max-width: 600px;
           margin: 0 auto;
           padding: 16px;
+          color: var(--text-color);
         }
 
         .header {
@@ -417,6 +418,7 @@ export default function TelegramShopPage() {
           overflow-y: auto;
           box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.5);
           border-top: 1px solid var(--theme-border);
+          color: var(--text-color);
         }
 
         .modal-header {
@@ -441,6 +443,7 @@ export default function TelegramShopPage() {
           align-items: center;
           justify-content: center;
           cursor: pointer;
+          color: var(--text-color);
         }
 
         .cart-list {
@@ -520,6 +523,11 @@ export default function TelegramShopPage() {
           color: white;
           font-family: inherit;
           font-size: 14px;
+        }
+
+        .form-input option {
+          background: #0f172a;
+          color: white;
         }
 
         .form-input:focus {

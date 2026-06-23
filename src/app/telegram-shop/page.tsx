@@ -602,6 +602,7 @@ export default function TelegramShopPage() {
 
         .form-input {
           width: 100%;
+          box-sizing: border-box;
           background: rgba(0, 0, 0, 0.2);
           border: 1px solid var(--theme-border);
           border-radius: 8px;
@@ -609,6 +610,18 @@ export default function TelegramShopPage() {
           color: white;
           font-family: inherit;
           font-size: 14px;
+        }
+
+        /* Replace the native OS dropdown chrome with a themed chevron. */
+        select.form-input {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          cursor: pointer;
+          padding-right: 36px;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
         }
 
         .form-input option {

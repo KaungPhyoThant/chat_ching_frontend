@@ -223,6 +223,8 @@ export default function TelegramShopPage() {
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderHistoryEntry[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  // Product detail modal (image slider + description).
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   // Variant picker modal: which product, and the chosen value per option type.
   const [variantModal, setVariantModal] = useState<Product | null>(null);
   const [variantPick, setVariantPick] = useState<Record<string, string>>({});
@@ -953,6 +955,27 @@ export default function TelegramShopPage() {
           text-decoration: line-through;
         }
 
+        /* Horizontal image slider — CSS scroll-snap, one image per view. */
+        .img-slider {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          border-radius: 12px;
+        }
+        .img-slider::-webkit-scrollbar {
+          height: 0;
+        }
+        .img-slider img {
+          flex: 0 0 100%;
+          width: 100%;
+          height: 240px;
+          object-fit: cover;
+          border-radius: 12px;
+          scroll-snap-align: center;
+        }
+
         .order-status {
           font-size: 11px;
           font-weight: 600;
@@ -1084,7 +1107,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #7 · auto-size ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #8 · detail ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1169,7 +1192,7 @@ export default function TelegramShopPage() {
               <div className="product-grid">
                 {filteredProducts.map((p) => (
                   <div className="product-card" key={p.id}>
-                    <div>
+                    <div onClick={() => setDetailProduct(p)} style={{ cursor: "pointer" }}>
                       {p.images && p.images.length > 0 && p.images[0] ? (
                         <img
                           src={p.images[0]}
@@ -1509,6 +1532,54 @@ export default function TelegramShopPage() {
                   </div>
                 );
               })()}
+
+            {/* Product detail modal (image slider) */}
+            {detailProduct && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <span className="modal-title">{detailProduct.name}</span>
+                    <button className="close-btn" onClick={() => setDetailProduct(null)}>
+                      ✕
+                    </button>
+                  </div>
+
+                  {detailProduct.images && detailProduct.images.filter(Boolean).length > 0 ? (
+                    <div className="img-slider">
+                      {detailProduct.images.filter(Boolean).map((src, i) => (
+                        <img key={i} src={src} alt={`${detailProduct.name} ${i + 1}`} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="prod-image-placeholder" style={{ height: 220 }}>
+                      🛍️
+                    </div>
+                  )}
+
+                  <div className="prod-price" style={{ margin: "12px 0 4px" }}>
+                    {hasVariantChoice(detailProduct) ? `${t("from")} ` : ""}
+                    {detailProduct.price.toLocaleString()} Ks
+                  </div>
+                  {detailProduct.description && (
+                    <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 12 }}>
+                      {detailProduct.description}
+                    </div>
+                  )}
+
+                  <button
+                    className="btn-submit"
+                    onClick={() => {
+                      const p = detailProduct;
+                      setDetailProduct(null);
+                      if (hasVariantChoice(p)) openVariantModal(p);
+                      else addToCart(p);
+                    }}
+                  >
+                    {t("addToCart")}
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -1244,7 +1244,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #16 · payment-fix ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #17 · qr-bigger ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1527,7 +1527,12 @@ export default function TelegramShopPage() {
                             const acc = paymentAccounts.find(
                               (a) => a.method === paymentMethod,
                             );
-                            const number = acc?.accountNumber || acc?.phone || "";
+                            // Bank transfer → account number first; wallets
+                            // (KPay/WavePay) → phone number first.
+                            const number =
+                              paymentMethod === "BANK_TRANSFER"
+                                ? acc?.accountNumber || acc?.phone || ""
+                                : acc?.phone || acc?.accountNumber || "";
                             return (
                               <div className="form-group">
                                 <label>{t("transferTo")}</label>
@@ -1570,13 +1575,15 @@ export default function TelegramShopPage() {
                                         src={acc.qrImage}
                                         alt="QR"
                                         style={{
-                                          width: 160,
-                                          height: 160,
+                                          width: "100%",
+                                          maxWidth: 320,
+                                          height: "auto",
                                           objectFit: "contain",
-                                          marginTop: 8,
-                                          borderRadius: 8,
+                                          display: "block",
+                                          marginTop: 10,
+                                          borderRadius: 12,
                                           background: "#fff",
-                                          padding: 6,
+                                          padding: 8,
                                         }}
                                       />
                                     )}

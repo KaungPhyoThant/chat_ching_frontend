@@ -250,9 +250,11 @@ export default function TelegramShopPage() {
   // Product detail modal (image slider + description + variant picker).
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [variantPick, setVariantPick] = useState<Record<string, string>>({});
+  const [detailQty, setDetailQty] = useState(1);
 
   const openDetail = (p: Product) => {
     setVariantPick({});
+    setDetailQty(1);
     setDetailProduct(p);
   };
 
@@ -514,20 +516,21 @@ export default function TelegramShopPage() {
     product: Product,
     variant?: ProductVariant,
     label?: string,
+    qty = 1,
   ) => {
     const line: CartItem = {
       ...product,
       price: variant?.price ?? product.price,
       variantId: variant?.id,
       variantLabel: label || variant?.sku,
-      quantity: 1,
+      quantity: qty,
     };
     const key = lineKey(line);
     setCart((prev) => {
       const existing = prev.find((item) => lineKey(item) === key);
       const updated = existing
         ? prev.map((item) =>
-            lineKey(item) === key ? { ...item, quantity: item.quantity + 1 } : item,
+            lineKey(item) === key ? { ...item, quantity: item.quantity + qty } : item,
           )
         : [...prev, line];
       syncCartToBackend(updated);
@@ -1129,7 +1132,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #11 · volume ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #12 · detail-qty ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1504,6 +1507,13 @@ export default function TelegramShopPage() {
                 const imgs = (p.images ?? []).filter(Boolean);
                 const price = matched?.price ?? p.price;
                 const stock = matched?.stock ?? p.stock;
+                // Tier-adjusted unit price for the chosen quantity.
+                const priceInfo = lineUnit({
+                  ...p,
+                  quantity: detailQty,
+                  variantId: matched?.id,
+                  price,
+                });
                 return (
                   <div className="modal-overlay">
                     <div className="modal-content">
@@ -1527,8 +1537,18 @@ export default function TelegramShopPage() {
                       )}
 
                       <div className="prod-price" style={{ margin: "12px 0 4px" }}>
-                        {hasVar && !matched ? `${t("from")} ` : ""}
-                        {price.toLocaleString()} Ks
+                        {hasVar && !matched ? (
+                          `${t("from")} ${p.price.toLocaleString()} Ks`
+                        ) : priceInfo.discounted ? (
+                          <>
+                            <span style={{ textDecoration: "line-through", opacity: 0.6 }}>
+                              {priceInfo.base.toLocaleString()}
+                            </span>{" "}
+                            {priceInfo.unit.toLocaleString()} Ks
+                          </>
+                        ) : (
+                          `${priceInfo.unit.toLocaleString()} Ks`
+                        )}
                       </div>
                       <div
                         style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10 }}
@@ -1586,15 +1606,38 @@ export default function TelegramShopPage() {
                         </div>
                       ))}
 
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          margin: "8px 0 14px",
+                        }}
+                      >
+                        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Qty</span>
+                        <div className="cart-qty-ctrl">
+                          <button
+                            className="qty-btn"
+                            onClick={() => setDetailQty((q) => Math.max(1, q - 1))}
+                          >
+                            -
+                          </button>
+                          <span>{detailQty}</span>
+                          <button className="qty-btn" onClick={() => setDetailQty((q) => q + 1)}>
+                            +
+                          </button>
+                        </div>
+                      </div>
+
                       <button
                         className="btn-submit"
                         disabled={hasVar && !matched}
                         onClick={() => {
                           if (hasVar) {
                             if (!matched) return;
-                            addToCart(p, matched, variantLabelOf(p, variantPick));
+                            addToCart(p, matched, variantLabelOf(p, variantPick), detailQty);
                           } else {
-                            addToCart(p);
+                            addToCart(p, undefined, undefined, detailQty);
                           }
                           setDetailProduct(null);
                         }}

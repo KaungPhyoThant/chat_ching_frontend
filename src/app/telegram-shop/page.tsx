@@ -258,10 +258,24 @@ export default function TelegramShopPage() {
     cart.find((i) => lineKey(i) === key)?.quantity ?? 1;
 
   const openDetail = (p: Product) => {
-    setVariantPick({});
-    // Non-variant: start from its cart quantity. Variant: wait until a combo is
-    // picked, then sync (see the chip onClick).
-    setDetailQty(hasVariantChoice(p) ? 1 : cartQtyOf(p.id));
+    if (hasVariantChoice(p)) {
+      // Pre-select the first valid combo so price/qty/add work immediately, and
+      // reflect that variant's existing cart quantity.
+      const opts = variantOptions(p);
+      const picks: Record<string, string> = {};
+      for (const o of opts) {
+        const first = o.choices.find((ch) =>
+          valueAvailable(p, opts, o, ch.tok, picks),
+        );
+        if (first) picks[o.id] = first.tok;
+      }
+      const matched = matchVariant(p, picks);
+      setVariantPick(picks);
+      setDetailQty(matched ? cartQtyOf(matched.id) : 1);
+    } else {
+      setVariantPick({});
+      setDetailQty(cartQtyOf(p.id));
+    }
     setDetailProduct(p);
   };
 
@@ -1167,7 +1181,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #13 · detail-qty-sync ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #14 · variant-preselect ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">

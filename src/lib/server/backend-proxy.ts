@@ -128,9 +128,11 @@ export async function proxyToBackend(
   }
 
   const contentType = upstream.headers.get("content-type") ?? "application/json";
-  const isStream = contentType.includes("text/event-stream");
-  const responseBody = isStream ? upstream.body : await upstream.text();
-  
+  // Stream SSE and binary (e.g. QR images) untouched; .text() would corrupt
+  // non-UTF-8 bytes. JSON/text is read as text so the envelope passes through.
+  const isText = contentType.includes("json") || contentType.startsWith("text/");
+  const responseBody = isText ? await upstream.text() : upstream.body;
+
   return new NextResponse(responseBody, {
     status: upstream.status,
     headers: responseHeaders(upstream),

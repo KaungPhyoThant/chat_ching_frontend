@@ -1257,7 +1257,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #19 · qr-hint ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #20 · qr-url ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1586,7 +1586,7 @@ export default function TelegramShopPage() {
                                     {acc.qrImage && (
                                       <>
                                         <img
-                                          src={acc.qrImage}
+                                          src={`/api/bot/payment-accounts/${acc.id}/qr`}
                                           alt="QR"
                                           style={{
                                             width: "100%",
@@ -1602,7 +1602,7 @@ export default function TelegramShopPage() {
                                         />
                                         <a
                                           className="file-btn"
-                                          href={acc.qrImage}
+                                          href={`/api/bot/payment-accounts/${acc.id}/qr`}
                                           download={`${acc.method}-QR.png`}
                                           target="_blank"
                                           rel="noopener noreferrer"

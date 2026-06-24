@@ -138,6 +138,17 @@ const matchVariant = (
   );
 };
 
+interface PaymentAccount {
+  id: string;
+  method: string;
+  name: string;
+  phone?: string | null;
+  accountNumber?: string | null;
+  bankName?: string | null;
+  qrImage?: string | null;
+  description?: string | null;
+}
+
 interface OrderHistoryEntry {
   orderNo: string;
   status: string;
@@ -213,13 +224,13 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   },
   paymentMethod: { en: "Payment Method", my: "ငွေပေးချေမှု နည်းလမ်း" },
   cod: { en: "Cash on Delivery (COD)", my: "အိမ်ရောက်ငွေချေ (COD)" },
-  transferRef: {
-    en: "Transfer Reference Number / Proof Link",
-    my: "လွှဲငွေ Ref နံပါတ် / အထောက်အထား",
-  },
-  transferRefPlaceholder: {
-    en: "Reference / Transaction ID",
-    my: "Reference / Transaction ID",
+  transferTo: { en: "Transfer to", my: "ဤနေရာသို့ လွှဲပါ" },
+  copy: { en: "Copy", my: "ကူး" },
+  copied: { en: "Copied!", my: "ကူးပြီး!" },
+  uploadSlip: { en: "Upload payment slip", my: "ငွေလွှဲ slip တင်ပါ" },
+  noPayAccount: {
+    en: "No payment account configured.",
+    my: "ငွေပေးချေမှု အကောင့် မသတ်မှတ်ရသေးပါ။",
   },
   subtotal: { en: "Subtotal", my: "စုစုပေါင်း (ပစ္စည်း)" },
   deliveryFee: { en: "Delivery Fee", my: "ပို့ဆောင်ခ" },
@@ -343,6 +354,16 @@ export default function TelegramShopPage() {
 
   const [paymentMethod, setPaymentMethod] = useState<"KBZPAY" | "WAVEPAY" | "COD">("COD");
   const [proofUrl, setProofUrl] = useState("");
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
+
+  const handleSlipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () =>
+      setProofUrl(typeof reader.result === "string" ? reader.result : "");
+    reader.readAsDataURL(file);
+  };
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
 
@@ -388,6 +409,10 @@ export default function TelegramShopPage() {
         const regRes = await fetch("/api/bot/delivery-regions");
         const regData = await regRes.json();
         setRegions(regData?.data ?? []);
+
+        const payRes = await fetch("/api/bot/payment-accounts");
+        const payData = await payRes.json();
+        setPaymentAccounts(payData?.data ?? []);
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("Failed to load catalog/delivery data", err);
@@ -999,6 +1024,13 @@ export default function TelegramShopPage() {
           margin-bottom: 20px;
         }
 
+        .pay-account {
+          background: var(--theme-panel);
+          border: 1px solid var(--theme-border);
+          border-radius: 12px;
+          padding: 12px;
+        }
+
         .order-card {
           background: var(--theme-panel);
           border: 1px solid var(--theme-border);
@@ -1181,7 +1213,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #14 · variant-preselect ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #15 · payment ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1457,22 +1489,93 @@ export default function TelegramShopPage() {
                           </select>
                         </div>
 
-                        {paymentMethod !== "COD" && (
-                          <div className="form-group">
-                            <label>{t("transferRef")}</label>
-                            <input
-                              type="text"
-                              className="form-input"
-                              placeholder={t("transferRefPlaceholder")}
-                              required
-                              value={proofUrl}
-                              onChange={(e) => setProofUrl(e.target.value)}
-                            />
-                            <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
-                              Transfer to KBZPay/WavePay: 09123456789 (AI Shop)
-                            </div>
-                          </div>
-                        )}
+                        {paymentMethod !== "COD" &&
+                          (() => {
+                            const acc = paymentAccounts.find(
+                              (a) => a.method === paymentMethod,
+                            );
+                            const number = acc?.accountNumber || acc?.phone || "";
+                            return (
+                              <div className="form-group">
+                                <label>{t("transferTo")}</label>
+                                {acc ? (
+                                  <div className="pay-account">
+                                    <div style={{ fontWeight: 600 }}>{acc.name}</div>
+                                    {acc.bankName && (
+                                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                                        {acc.bankName}
+                                      </div>
+                                    )}
+                                    {number && (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 8,
+                                          margin: "4px 0",
+                                        }}
+                                      >
+                                        <span style={{ fontWeight: 700, fontSize: 16 }}>
+                                          {number}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          className="icon-toggle"
+                                          onClick={() => navigator.clipboard?.writeText(number)}
+                                        >
+                                          📋 {t("copy")}
+                                        </button>
+                                      </div>
+                                    )}
+                                    {acc.description && (
+                                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                                        {acc.description}
+                                      </div>
+                                    )}
+                                    {acc.qrImage && (
+                                      <img
+                                        src={acc.qrImage}
+                                        alt="QR"
+                                        style={{
+                                          width: 160,
+                                          height: 160,
+                                          objectFit: "contain",
+                                          marginTop: 8,
+                                          borderRadius: 8,
+                                          background: "#fff",
+                                          padding: 6,
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                                    {t("noPayAccount")}
+                                  </div>
+                                )}
+
+                                <label style={{ marginTop: 12 }}>{t("uploadSlip")}</label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleSlipUpload}
+                                  style={{ fontSize: 13, color: "var(--text-muted)" }}
+                                />
+                                {proofUrl.startsWith("data:") && (
+                                  <img
+                                    src={proofUrl}
+                                    alt="slip"
+                                    style={{
+                                      width: 120,
+                                      marginTop: 8,
+                                      borderRadius: 8,
+                                      border: "1px solid var(--theme-border)",
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })()}
 
                         <div className="total-block">
                           <div className="total-row">

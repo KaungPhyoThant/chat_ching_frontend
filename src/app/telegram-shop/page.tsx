@@ -231,6 +231,10 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   chooseImage: { en: "Choose image", my: "ပုံ ရွေးပါ" },
   slipSelected: { en: "Slip selected", my: "Slip ရွေးပြီး" },
   saveQr: { en: "Save QR", my: "QR သိမ်းရန်" },
+  qrSaveHint: {
+    en: "📱 On phone: long-press the QR → Save to Photos",
+    my: "📱 ဖုန်းတွင်: QR ကို ဖိထား → Save to Photos",
+  },
   noPayAccount: {
     en: "No payment account configured.",
     my: "ငွေပေးချေမှု အကောင့် မသတ်မှတ်ရသေးပါ။",
@@ -1253,7 +1257,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #18 · qr-save ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #19 · qr-hint ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1600,10 +1604,21 @@ export default function TelegramShopPage() {
                                           className="file-btn"
                                           href={acc.qrImage}
                                           download={`${acc.method}-QR.png`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
                                           style={{ marginTop: 8 }}
                                         >
                                           ⬇ {t("saveQr")}
                                         </a>
+                                        <div
+                                          style={{
+                                            fontSize: 11,
+                                            color: "var(--text-muted)",
+                                            marginTop: 4,
+                                          }}
+                                        >
+                                          {t("qrSaveHint")}
+                                        </div>
                                       </>
                                     )}
                                   </div>

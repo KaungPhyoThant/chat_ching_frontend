@@ -50,13 +50,25 @@ export default function PriceListsPage() {
   const groupName = (id: string | null) =>
     id ? (groups.find((g) => g.id === id)?.name ?? "—") : "All customers";
 
-  // variantId → "Product · SKU" + flat options for the picker
+  // variantId → "Product · Variant name" + flat options for the picker.
   const variantIndex = useMemo(() => {
     const map = new Map<string, string>();
     const options: { label: string; value: string }[] = [];
     for (const p of products) {
       for (const v of p.variants) {
-        const label = `${p.name} · ${v.sku}`;
+        // Option values (e.g. "White / Small"); the editor stores raw values in
+        // optionValueIds, so fall back to the token, then to the SKU.
+        const valueLabel = v.optionValueIds
+          .map((id) => {
+            for (const ot of p.optionTypes) {
+              const val = ot.values?.find((x) => x.id === id);
+              if (val) return val.value;
+            }
+            return id;
+          })
+          .filter(Boolean)
+          .join(" / ");
+        const label = `${p.name} · ${valueLabel || v.sku}`;
         map.set(v.id, label);
         options.push({ label, value: v.id });
       }

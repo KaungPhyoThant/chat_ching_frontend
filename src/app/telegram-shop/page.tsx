@@ -230,6 +230,7 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   uploadSlip: { en: "Upload payment slip", my: "ငွေလွှဲ slip တင်ပါ" },
   chooseImage: { en: "Choose image", my: "ပုံ ရွေးပါ" },
   slipSelected: { en: "Slip selected", my: "Slip ရွေးပြီး" },
+  saveQr: { en: "Save QR", my: "QR သိမ်းရန်" },
   noPayAccount: {
     en: "No payment account configured.",
     my: "ငွေပေးချေမှု အကောင့် မသတ်မှတ်ရသေးပါ။",
@@ -357,6 +358,14 @@ export default function TelegramShopPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>("COD");
   const [proofUrl, setProofUrl] = useState("");
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
+  const [copied, setCopied] = useState(false);
+
+  const copyNumber = (value: string) => {
+    if (!value) return;
+    navigator.clipboard?.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const PAY_METHOD_LABELS: Record<string, string> = {
     KBZPAY: "KBZPay",
@@ -1244,7 +1253,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #17 · qr-bigger ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #18 · qr-save ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1559,9 +1568,9 @@ export default function TelegramShopPage() {
                                         <button
                                           type="button"
                                           className="icon-toggle"
-                                          onClick={() => navigator.clipboard?.writeText(number)}
+                                          onClick={() => copyNumber(number)}
                                         >
-                                          📋 {t("copy")}
+                                          📋 {copied ? t("copied") : t("copy")}
                                         </button>
                                       </div>
                                     )}
@@ -1571,21 +1580,31 @@ export default function TelegramShopPage() {
                                       </div>
                                     )}
                                     {acc.qrImage && (
-                                      <img
-                                        src={acc.qrImage}
-                                        alt="QR"
-                                        style={{
-                                          width: "100%",
-                                          maxWidth: 320,
-                                          height: "auto",
-                                          objectFit: "contain",
-                                          display: "block",
-                                          marginTop: 10,
-                                          borderRadius: 12,
-                                          background: "#fff",
-                                          padding: 8,
-                                        }}
-                                      />
+                                      <>
+                                        <img
+                                          src={acc.qrImage}
+                                          alt="QR"
+                                          style={{
+                                            width: "100%",
+                                            maxWidth: 320,
+                                            height: "auto",
+                                            objectFit: "contain",
+                                            display: "block",
+                                            marginTop: 10,
+                                            borderRadius: 12,
+                                            background: "#fff",
+                                            padding: 8,
+                                          }}
+                                        />
+                                        <a
+                                          className="file-btn"
+                                          href={acc.qrImage}
+                                          download={`${acc.method}-QR.png`}
+                                          style={{ marginTop: 8 }}
+                                        >
+                                          ⬇ {t("saveQr")}
+                                        </a>
+                                      </>
                                     )}
                                   </div>
                                 ) : (

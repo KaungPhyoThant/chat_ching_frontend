@@ -228,6 +228,8 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   copy: { en: "Copy", my: "ကူး" },
   copied: { en: "Copied!", my: "ကူးပြီး!" },
   uploadSlip: { en: "Upload payment slip", my: "ငွေလွှဲ slip တင်ပါ" },
+  chooseImage: { en: "Choose image", my: "ပုံ ရွေးပါ" },
+  slipSelected: { en: "Slip selected", my: "Slip ရွေးပြီး" },
   noPayAccount: {
     en: "No payment account configured.",
     my: "ငွေပေးချေမှု အကောင့် မသတ်မှတ်ရသေးပါ။",
@@ -352,9 +354,25 @@ export default function TelegramShopPage() {
   const [selectedCityId, setSelectedCityId] = useState("");
   const [selectedTownshipId, setSelectedTownshipId] = useState("");
 
-  const [paymentMethod, setPaymentMethod] = useState<"KBZPAY" | "WAVEPAY" | "COD">("COD");
+  const [paymentMethod, setPaymentMethod] = useState<string>("COD");
   const [proofUrl, setProofUrl] = useState("");
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
+
+  const PAY_METHOD_LABELS: Record<string, string> = {
+    KBZPAY: "KBZPay",
+    WAVEPAY: "WavePay",
+    BANK_TRANSFER: "Bank Transfer",
+    AYAPAY: "AYA Pay",
+    CBPAY: "CB Pay",
+  };
+  // COD plus every method that has a configured payment account.
+  const payMethodOptions = [
+    { value: "COD", label: t("cod") },
+    ...Array.from(new Set(paymentAccounts.map((a) => a.method))).map((m) => ({
+      value: m,
+      label: PAY_METHOD_LABELS[m] ?? m,
+    })),
+  ];
 
   const handleSlipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1031,6 +1049,19 @@ export default function TelegramShopPage() {
           padding: 12px;
         }
 
+        .file-btn {
+          display: inline-block;
+          background: var(--theme-panel);
+          border: 1px dashed var(--theme-accent);
+          color: var(--theme-accent);
+          border-radius: 10px;
+          padding: 10px 16px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          margin-bottom: 4px;
+        }
+
         .order-card {
           background: var(--theme-panel);
           border: 1px solid var(--theme-border);
@@ -1213,7 +1244,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #15 · payment ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #16 · payment-fix ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1481,11 +1512,13 @@ export default function TelegramShopPage() {
                             className="form-input"
                             required
                             value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value as "KBZPAY" | "WAVEPAY" | "COD")}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
                           >
-                            <option value="COD">{t("cod")}</option>
-                            <option value="KBZPAY">KBZPay Transfer</option>
-                            <option value="WAVEPAY">WavePay Transfer</option>
+                            {payMethodOptions.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -1555,12 +1588,17 @@ export default function TelegramShopPage() {
                                 )}
 
                                 <label style={{ marginTop: 12 }}>{t("uploadSlip")}</label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleSlipUpload}
-                                  style={{ fontSize: 13, color: "var(--text-muted)" }}
-                                />
+                                <label className="file-btn">
+                                  {proofUrl.startsWith("data:")
+                                    ? `✓ ${t("slipSelected")}`
+                                    : `📎 ${t("chooseImage")}`}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleSlipUpload}
+                                    style={{ display: "none" }}
+                                  />
+                                </label>
                                 {proofUrl.startsWith("data:") && (
                                   <img
                                     src={proofUrl}

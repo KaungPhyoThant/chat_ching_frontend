@@ -152,9 +152,13 @@ interface PaymentAccount {
 interface OrderHistoryEntry {
   orderNo: string;
   status: string;
+  subtotal?: number;
   total: number;
+  shippingAddress?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
   createdAt: string;
-  items: { name: string; quantity: number; total: number }[];
+  items: { name: string; quantity: number; unitPrice?: number; total: number }[];
 }
 
 interface TelegramWebApp {
@@ -245,6 +249,9 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   placeOrder: { en: "Place Order", my: "မှာယူမည်" },
   placingOrder: { en: "Placing Order…", my: "မှာယူနေသည်…" },
   orderHistory: { en: "Order History", my: "မှာယူမှု မှတ်တမ်း" },
+  continueShopping: { en: "Continue shopping", my: "ဆက်ဝယ်ရန်" },
+  payment: { en: "Payment", my: "ငွေပေးချေမှု" },
+  shipTo: { en: "Ship to", my: "ပို့ဆောင်ရန်" },
   noOrders: { en: "No orders yet.", my: "မှာယူမှု မရှိသေးပါ။" },
   orderPlaced: { en: "Order Placed!", my: "မှာယူပြီးပါပြီ!" },
   orderNotified: {
@@ -691,12 +698,8 @@ export default function TelegramShopPage() {
         const orderInfo = responseData.data;
         setOrderSuccess(orderInfo?.orderNo);
         setCart([]);
-        setTimeout(() => {
-          const tg = window.Telegram?.WebApp;
-          if (tg) {
-            tg.close();
-          }
-        }, 3000);
+        setShowCart(false);
+        setProofUrl("");
       } else {
         alert("Checkout failed. Please try again.");
       }
@@ -1253,6 +1256,23 @@ export default function TelegramShopPage() {
             <p style={{ color: "var(--text-muted)", marginTop: "10px" }}>
               {t("orderNotified")}
             </p>
+            <button
+              className="btn-submit"
+              style={{ maxWidth: 280, margin: "20px auto 0" }}
+              onClick={() => {
+                setOrderSuccess(null);
+                openOrders();
+              }}
+            >
+              📦 {t("orderHistory")}
+            </button>
+            <button
+              className="file-btn"
+              style={{ margin: "10px auto 0", display: "block" }}
+              onClick={() => setOrderSuccess(null)}
+            >
+              🛍️ {t("continueShopping")}
+            </button>
           </div>
         ) : (
           <>
@@ -1263,7 +1283,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #20 · qr-url ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #21 · order-detail ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1723,9 +1743,22 @@ export default function TelegramShopPage() {
                               key={idx}
                               style={{ fontSize: "13px", color: "var(--text-muted)" }}
                             >
-                              • {i.name} ×{i.quantity} — {i.total.toLocaleString()} Ks
+                              • {i.name} ×{i.quantity}
+                              {i.unitPrice ? ` @ ${i.unitPrice.toLocaleString()}` : ""} —{" "}
+                              {i.total.toLocaleString()} Ks
                             </div>
                           ))}
+                          {o.paymentMethod && (
+                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
+                              {t("payment")}: {o.paymentMethod}
+                              {o.paymentStatus ? ` · ${o.paymentStatus}` : ""}
+                            </div>
+                          )}
+                          {o.shippingAddress && (
+                            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                              {t("shipTo")}: {o.shippingAddress}
+                            </div>
+                          )}
                           <div style={{ textAlign: "right", fontWeight: 700, marginTop: "6px" }}>
                             {t("total")}: {o.total.toLocaleString()} Ks
                           </div>

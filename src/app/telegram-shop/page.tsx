@@ -194,6 +194,7 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   chooseOptions: { en: "Choose options", my: "ရွေးချယ်ပါ" },
   inStock: { en: "In stock", my: "လက်ကျန်" },
   add: { en: "Add to Cart", my: "ခြင်းထဲ ထည့်မည်" },
+  updateCart: { en: "Update Cart", my: "ခြင်း ပြင်မည်" },
   shoppingCart: { en: "Shopping Cart", my: "ဈေးခြင်း" },
   cartEmpty: { en: "Your cart is empty.", my: "ဈေးခြင်း ဗလာဖြစ်နေသည်။" },
   checkoutDetails: { en: "Checkout Details", my: "မှာယူမှု အချက်အလက်" },
@@ -252,9 +253,15 @@ export default function TelegramShopPage() {
   const [variantPick, setVariantPick] = useState<Record<string, string>>({});
   const [detailQty, setDetailQty] = useState(1);
 
+  // Current quantity of a cart line (by variant or product key), else 1.
+  const cartQtyOf = (key: string) =>
+    cart.find((i) => lineKey(i) === key)?.quantity ?? 1;
+
   const openDetail = (p: Product) => {
     setVariantPick({});
-    setDetailQty(1);
+    // Non-variant: start from its cart quantity. Variant: wait until a combo is
+    // picked, then sync (see the chip onClick).
+    setDetailQty(hasVariantChoice(p) ? 1 : cartQtyOf(p.id));
     setDetailProduct(p);
   };
 
@@ -533,6 +540,34 @@ export default function TelegramShopPage() {
             lineKey(item) === key ? { ...item, quantity: item.quantity + qty } : item,
           )
         : [...prev, line];
+      syncCartToBackend(updated);
+      return updated;
+    });
+  };
+
+  // Set a line to an absolute quantity (used by the detail modal so opening with
+  // an existing qty and pressing Add doesn't double it).
+  const setCartLineQty = (
+    product: Product,
+    variant: ProductVariant | undefined,
+    label: string | undefined,
+    qty: number,
+  ) => {
+    const lk = variant?.id ?? product.id;
+    setCart((prev) => {
+      const exists = prev.some((i) => lineKey(i) === lk);
+      const updated = exists
+        ? prev.map((i) => (lineKey(i) === lk ? { ...i, quantity: qty } : i))
+        : [
+            ...prev,
+            {
+              ...product,
+              price: variant?.price ?? product.price,
+              variantId: variant?.id,
+              variantLabel: label || variant?.sku,
+              quantity: qty,
+            },
+          ];
       syncCartToBackend(updated);
       return updated;
     });
@@ -1132,7 +1167,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #12 · detail-qty ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #13 · detail-qty-sync ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1582,21 +1617,22 @@ export default function TelegramShopPage() {
                                   key={c.tok}
                                   disabled={!ok}
                                   className={`variant-chip ${variantPick[opt.id] === c.tok ? "active" : ""}`}
-                                  onClick={() =>
-                                    setVariantPick((prev) => {
-                                      const next = { ...prev, [opt.id]: c.tok };
-                                      for (let j = oi + 1; j < opts.length; j++)
-                                        delete next[opts[j].id];
-                                      for (let j = oi + 1; j < opts.length; j++) {
-                                        const o = opts[j];
-                                        const first = o.choices.find((ch) =>
-                                          valueAvailable(p, opts, o, ch.tok, next),
-                                        );
-                                        if (first) next[o.id] = first.tok;
-                                      }
-                                      return next;
-                                    })
-                                  }
+                                  onClick={() => {
+                                    const next = { ...variantPick, [opt.id]: c.tok };
+                                    for (let j = oi + 1; j < opts.length; j++)
+                                      delete next[opts[j].id];
+                                    for (let j = oi + 1; j < opts.length; j++) {
+                                      const o = opts[j];
+                                      const first = o.choices.find((ch) =>
+                                        valueAvailable(p, opts, o, ch.tok, next),
+                                      );
+                                      if (first) next[o.id] = first.tok;
+                                    }
+                                    setVariantPick(next);
+                                    // Reflect the chosen variant's existing cart qty.
+                                    const m = matchVariant(p, next);
+                                    setDetailQty(m ? cartQtyOf(m.id) : 1);
+                                  }}
                                 >
                                   {c.label}
                                 </button>
@@ -1635,14 +1671,21 @@ export default function TelegramShopPage() {
                         onClick={() => {
                           if (hasVar) {
                             if (!matched) return;
-                            addToCart(p, matched, variantLabelOf(p, variantPick), detailQty);
+                            setCartLineQty(
+                              p,
+                              matched,
+                              variantLabelOf(p, variantPick),
+                              detailQty,
+                            );
                           } else {
-                            addToCart(p, undefined, undefined, detailQty);
+                            setCartLineQty(p, undefined, undefined, detailQty);
                           }
                           setDetailProduct(null);
                         }}
                       >
-                        {t("addToCart")}
+                        {cart.some((i) => lineKey(i) === (matched?.id ?? p.id))
+                          ? t("updateCart")
+                          : t("addToCart")}
                       </button>
                     </div>
                   </div>

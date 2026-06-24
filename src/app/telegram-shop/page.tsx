@@ -1062,6 +1062,12 @@ export default function TelegramShopPage() {
           padding: 12px;
         }
 
+        .pay-account img {
+          -webkit-touch-callout: default !important;
+          -webkit-user-select: auto !important;
+          user-select: auto !important;
+        }
+
         .file-btn {
           display: inline-block;
           background: var(--theme-panel);
@@ -1598,6 +1604,9 @@ export default function TelegramShopPage() {
                                             borderRadius: 12,
                                             background: "#fff",
                                             padding: 8,
+                                            WebkitTouchCallout: "default",
+                                            WebkitUserSelect: "auto",
+                                            userSelect: "auto",
                                           }}
                                         />
                                         <a

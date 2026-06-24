@@ -174,6 +174,7 @@ interface TelegramWebApp {
       username?: string;
     };
   };
+  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
 }
 
 declare global {
@@ -236,8 +237,8 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   slipSelected: { en: "Slip selected", my: "Slip ရွေးပြီး" },
   saveQr: { en: "Save QR", my: "QR သိမ်းရန်" },
   qrSaveHint: {
-    en: "📱 On phone: long-press the QR → Save to Photos",
-    my: "📱 ဖုန်းတွင်: QR ကို ဖိထား → Save to Photos",
+    en: "📱 Tap the QR or Save button to open in browser, then long-press to save",
+    my: "📱 QR သို့မဟုတ် ခလုတ်ကိုနှိပ်ပြီး Browser တွင်ဖွင့်ကာ Save to Photos လုပ်ပါ",
   },
   noPayAccount: {
     en: "No payment account configured.",
@@ -376,6 +377,15 @@ export default function TelegramShopPage() {
     navigator.clipboard?.writeText(value);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const openQrExternal = (accId: string) => {
+    const qrUrl = window.location.origin + `/api/bot/payment-accounts/${accId}/qr`;
+    if (window.Telegram?.WebApp?.openLink) {
+      window.Telegram.WebApp.openLink(qrUrl);
+    } else {
+      window.open(qrUrl, "_blank");
+    }
   };
 
   const PAY_METHOD_LABELS: Record<string, string> = {
@@ -1614,6 +1624,7 @@ export default function TelegramShopPage() {
                                         <img
                                           src={`/api/bot/payment-accounts/${acc.id}/qr`}
                                           alt="QR"
+                                          onClick={() => openQrExternal(acc.id)}
                                           style={{
                                             width: "100%",
                                             maxWidth: 320,
@@ -1624,21 +1635,20 @@ export default function TelegramShopPage() {
                                             borderRadius: 12,
                                             background: "#fff",
                                             padding: 8,
+                                            cursor: "pointer",
                                             WebkitTouchCallout: "default",
                                             WebkitUserSelect: "auto",
                                             userSelect: "auto",
                                           }}
                                         />
-                                        <a
+                                        <button
+                                          type="button"
                                           className="file-btn"
-                                          href={`/api/bot/payment-accounts/${acc.id}/qr`}
-                                          download={`${acc.method}-QR.png`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                          onClick={() => openQrExternal(acc.id)}
                                           style={{ marginTop: 8 }}
                                         >
                                           ⬇ {t("saveQr")}
-                                        </a>
+                                        </button>
                                         <div
                                           style={{
                                             fontSize: 11,

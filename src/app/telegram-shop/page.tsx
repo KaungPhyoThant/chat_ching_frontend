@@ -14,6 +14,10 @@ interface OptionType {
   level: number;
   values: OptionValue[];
 }
+interface PriceTier {
+  minQty: number;
+  price: number;
+}
 interface ProductVariant {
   id: string;
   sku: string;
@@ -21,6 +25,7 @@ interface ProductVariant {
   stock: number;
   isActive: boolean;
   optionValueIds: string[];
+  tiers?: PriceTier[];
 }
 
 interface Product {
@@ -64,6 +69,23 @@ interface CartItem extends Product {
 
 // A cart line is identified by its variant when one is chosen, else the product.
 const lineKey = (i: { id: string; variantId?: string }) => i.variantId ?? i.id;
+
+// Resolve a cart line's unit price for its current quantity, applying volume
+// tiers from the chosen variant (or the default variant for base pricing).
+const lineUnit = (item: CartItem): { base: number; unit: number; discounted: boolean } => {
+  const variant =
+    item.variants?.find((v) => v.id === item.variantId) ?? item.variants?.[0];
+  const base = variant?.price ?? item.price;
+  let unit = base;
+  let bestMin = -1;
+  for (const t of variant?.tiers ?? []) {
+    if (item.quantity >= t.minQty && t.minQty > bestMin) {
+      bestMin = t.minQty;
+      unit = t.price;
+    }
+  }
+  return { base, unit, discounted: unit < base };
+};
 
 // Build the pickable options per level, deriving the value tokens from the
 // variants themselves — the admin editor leaves optionTypes[].values empty and
@@ -461,7 +483,7 @@ export default function TelegramShopPage() {
   const selectedRegion = regions.find((r) => r.id === selectedRegionId);
   const selectedCity = selectedRegion?.cities.find((c) => c.id === selectedCityId);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + lineUnit(item).unit * item.quantity, 0);
   const total = subtotal + deliveryFee;
 
   const syncCartToBackend = async (newCart: CartItem[]) => {
@@ -1107,7 +1129,7 @@ export default function TelegramShopPage() {
                   {t("welcome")}, {fullName}
                 </div>
                 {/* Deploy marker — bump on each push to confirm Vercel updated. */}
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #10 · md-desc ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #11 · volume ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -1249,7 +1271,23 @@ export default function TelegramShopPage() {
                                 {item.variantLabel ? ` (${item.variantLabel})` : ""}
                               </div>
                               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                                {item.price.toLocaleString()} Ks
+                                {(() => {
+                                  const { base, unit, discounted } = lineUnit(item);
+                                  return discounted ? (
+                                    <>
+                                      <span
+                                        style={{ textDecoration: "line-through", opacity: 0.6 }}
+                                      >
+                                        {base.toLocaleString()}
+                                      </span>{" "}
+                                      <span style={{ color: "var(--theme-accent)", fontWeight: 600 }}>
+                                        {unit.toLocaleString()} Ks
+                                      </span>
+                                    </>
+                                  ) : (
+                                    `${unit.toLocaleString()} Ks`
+                                  );
+                                })()}
                               </div>
                             </div>
                             <div className="cart-qty-ctrl">

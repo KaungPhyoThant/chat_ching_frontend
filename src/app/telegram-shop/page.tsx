@@ -82,6 +82,8 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   continueShopping: { en: "Continue shopping", my: "ဆက်ဝယ်ရန်" },
   payment: { en: "Payment", my: "ငွေပေးချေမှု" },
   shipTo: { en: "Ship to", my: "ပို့ဆောင်ရန်" },
+  payNow: { en: "💳 Pay now", my: "💳 ယခု ပေးချေရန်" },
+  submitPayment: { en: "Submit payment", my: "ငွေပေးချေမှု တင်ရန်" },
   noOrders: { en: "No orders yet.", my: "မှာယူမှု မရှိသေးပါ။" },
   orderPlaced: { en: "Order Placed!", my: "မှာယူပြီးပါပြီ!" },
   orderNotified: {
@@ -165,6 +167,44 @@ export default function TelegramShopPage() {
   const [proofUrl, setProofUrl] = useState("");
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
   const [copied, setCopied] = useState(false);
+  // Pay-now for an existing pending order.
+  const [payOrder, setPayOrder] = useState<OrderHistoryEntry | null>(null);
+  const [payMethod, setPayMethod] = useState("");
+  const [payProof, setPayProof] = useState("");
+  const [payBusy, setPayBusy] = useState(false);
+
+  const openPayNow = (o: OrderHistoryEntry) => {
+    const first = paymentAccounts[0]?.method ?? "";
+    setPayMethod(first);
+    setPayProof("");
+    setPayOrder(o);
+    setShowOrders(false);
+  };
+
+  const submitPayNow = async () => {
+    if (!payOrder || !payMethod) return;
+    setPayBusy(true);
+    try {
+      await fetch(`/api/bot/orders/${payOrder.orderNo}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          initData,
+          tgId: telegramId,
+          sig,
+          method: payMethod,
+          proofUrl: payProof || undefined,
+        }),
+      });
+      setPayOrder(null);
+      setPayProof("");
+      await openOrders();
+    } catch {
+      // ignore — owner can still be notified on retry
+    } finally {
+      setPayBusy(false);
+    }
+  };
 
   const copyNumber = (value: string) => {
     if (!value) return;
@@ -542,7 +582,7 @@ export default function TelegramShopPage() {
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   {t("welcome")}, {fullName}
                 </div>
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #21 · order-detail ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #22 · pay-now ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -701,7 +741,120 @@ export default function TelegramShopPage() {
               ordersLoading={ordersLoading}
               orders={orders}
               t={t}
+              onPayNow={openPayNow}
             />
+
+            {/* Pay now for an existing pending order */}
+            {payOrder &&
+              (() => {
+                const acc = paymentAccounts.find((a) => a.method === payMethod);
+                const number =
+                  payMethod === "BANK_TRANSFER"
+                    ? acc?.accountNumber || acc?.phone || ""
+                    : acc?.phone || acc?.accountNumber || "";
+                const methods = paymentAccounts.map((a) => a.method);
+                return (
+                  <div className="modal-overlay">
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <span className="modal-title">
+                          {t("payNow")} · #{payOrder.orderNo}
+                        </span>
+                        <button className="close-btn" onClick={() => setPayOrder(null)}>
+                          ✕
+                        </button>
+                      </div>
+                      <div className="prod-price" style={{ marginBottom: 10 }}>
+                        {t("total")}: {payOrder.total.toLocaleString()} Ks
+                      </div>
+
+                      <div className="form-group">
+                        <label>{t("paymentMethod")}</label>
+                        <select
+                          className="form-input"
+                          value={payMethod}
+                          onChange={(e) => setPayMethod(e.target.value)}
+                        >
+                          {methods.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {acc && (
+                        <div className="pay-account">
+                          <div style={{ fontWeight: 600 }}>{acc.name}</div>
+                          {acc.bankName && (
+                            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                              {acc.bankName}
+                            </div>
+                          )}
+                          {number && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
+                              <span style={{ fontWeight: 700, fontSize: 16 }}>{number}</span>
+                              <button
+                                type="button"
+                                className="icon-toggle"
+                                onClick={() => copyNumber(number)}
+                              >
+                                📋 {copied ? t("copied") : t("copy")}
+                              </button>
+                            </div>
+                          )}
+                          {acc.qrImage && (
+                            <img
+                              src={`/api/bot/payment-accounts/${acc.id}/qr`}
+                              alt="QR"
+                              style={{
+                                width: "100%",
+                                maxWidth: 320,
+                                height: "auto",
+                                display: "block",
+                                marginTop: 8,
+                                borderRadius: 12,
+                                background: "#fff",
+                                padding: 8,
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      <label style={{ marginTop: 12, display: "block" }}>{t("uploadSlip")}</label>
+                      <label className="file-btn">
+                        {payProof.startsWith("data:")
+                          ? `✓ ${t("slipSelected")}`
+                          : `📎 ${t("chooseImage")}`}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () =>
+                              setPayProof(
+                                typeof reader.result === "string" ? reader.result : "",
+                              );
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+
+                      <button
+                        className="btn-submit"
+                        disabled={payBusy || !payMethod}
+                        onClick={submitPayNow}
+                      >
+                        {payBusy ? t("placingOrder") : t("submitPayment")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
             {/* Product detail — slider, description, stock, variant picker */}
             <ProductDetailModal

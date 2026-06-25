@@ -8,6 +8,7 @@ interface OrderHistoryDrawerProps {
   ordersLoading: boolean;
   orders: OrderHistoryEntry[];
   t: (key: string) => string;
+  onPayNow?: (o: OrderHistoryEntry) => void;
 }
 
 export default function OrderHistoryDrawer({
@@ -16,6 +17,7 @@ export default function OrderHistoryDrawer({
   ordersLoading,
   orders,
   t,
+  onPayNow,
 }: OrderHistoryDrawerProps) {
   if (!showOrders) return null;
 
@@ -65,6 +67,15 @@ export default function OrderHistoryDrawer({
                 <div style={{ textAlign: "right", fontWeight: 700, marginTop: "6px" }}>
                   {t("total")}: {o.total.toLocaleString()} Ks
                 </div>
+                {o.status === "PENDING" && onPayNow && (
+                  <button
+                    className="btn-add"
+                    style={{ marginTop: 8 }}
+                    onClick={() => onPayNow(o)}
+                  >
+                    {t("payNow")}
+                  </button>
+                )}
               </div>
             ))}
           </div>

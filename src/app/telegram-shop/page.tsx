@@ -1,199 +1,28 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
-import { mdToHtml } from "@/lib/markdown";
-
-interface OptionValue {
-  id: string;
-  value: string;
-}
-interface OptionType {
-  id: string;
-  name: string;
-  level: number;
-  values: OptionValue[];
-}
-interface PriceTier {
-  minQty: number;
-  price: number;
-}
-interface ProductVariant {
-  id: string;
-  sku: string;
-  price: number;
-  stock: number;
-  isActive: boolean;
-  optionValueIds: string[];
-  tiers?: PriceTier[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  stock: number;
-  category: { name: string };
-  images?: string[];
-  hasVariants?: boolean;
-  variants?: ProductVariant[];
-  optionTypes?: OptionType[];
-}
-
-interface Township {
-  id: string;
-  name: string;
-  deliveryFee: number | null;
-}
-
-interface City {
-  id: string;
-  name: string;
-  deliveryFee: number | null;
-  townships: Township[];
-}
-
-interface Region {
-  id: string;
-  name: string;
-  deliveryFee: number | null;
-  cities: City[];
-}
-
-interface CartItem extends Product {
-  quantity: number;
-  variantId?: string;
-  variantLabel?: string;
-}
-
-// A cart line is identified by its variant when one is chosen, else the product.
-const lineKey = (i: { id: string; variantId?: string }) => i.variantId ?? i.id;
-
-// Resolve a cart line's unit price for its current quantity, applying volume
-// tiers from the chosen variant (or the default variant for base pricing).
-const lineUnit = (item: CartItem): { base: number; unit: number; discounted: boolean } => {
-  const variant =
-    item.variants?.find((v) => v.id === item.variantId) ?? item.variants?.[0];
-  const base = variant?.price ?? item.price;
-  let unit = base;
-  let bestMin = -1;
-  for (const t of variant?.tiers ?? []) {
-    if (item.quantity >= t.minQty && t.minQty > bestMin) {
-      bestMin = t.minQty;
-      unit = t.price;
-    }
-  }
-  return { base, unit, discounted: unit < base };
-};
-
-// Build the pickable options per level, deriving the value tokens from the
-// variants themselves — the admin editor leaves optionTypes[].values empty and
-// stores the raw value in each variant's optionValueIds[level-1]. We still map a
-// token to a friendly label via optionTypes[].values when those exist.
-interface VariantOption {
-  id: string;
-  name: string;
-  idx: number;
-  choices: { tok: string; label: string }[];
-}
-const variantOptions = (p: Product): VariantOption[] => {
-  const types = [...(p.optionTypes ?? [])].sort((a, b) => a.level - b.level);
-  const vars = (p.variants ?? []).filter((v) => v.isActive);
-  return types
-    .map((ot, idx) => {
-      const tokens = Array.from(
-        new Set(vars.map((v) => v.optionValueIds[idx]).filter(Boolean)),
-      );
-      return {
-        id: ot.id,
-        name: ot.name,
-        idx,
-        choices: tokens.map((tok) => ({
-          tok,
-          label: ot.values?.find((val) => val.id === tok)?.value ?? tok,
-        })),
-      };
-    })
-    .filter((o) => o.choices.length > 0);
-};
-
-// True when the product needs a variant choice before adding to cart.
-const hasVariantChoice = (p: Product) =>
-  variantOptions(p).length > 0 &&
-  (p.variants?.filter((v) => v.isActive).length ?? 0) > 0;
-
-// Resolve the variant matching one picked token per option level.
-const matchVariant = (
-  p: Product,
-  picks: Record<string, string>,
-): ProductVariant | null => {
-  const opts = variantOptions(p);
-  const wanted = opts.map((o) => picks[o.id]);
-  if (wanted.some((w) => !w)) return null;
-  return (
-    (p.variants ?? []).find(
-      (v) => v.isActive && opts.every((o, i) => v.optionValueIds[o.idx] === wanted[i]),
-    ) ?? null
-  );
-};
-
-interface PaymentAccount {
-  id: string;
-  method: string;
-  name: string;
-  phone?: string | null;
-  accountNumber?: string | null;
-  bankName?: string | null;
-  qrImage?: string | null;
-  description?: string | null;
-}
-
-interface OrderHistoryEntry {
-  orderNo: string;
-  status: string;
-  subtotal?: number;
-  total: number;
-  shippingAddress?: string;
-  paymentMethod?: string;
-  paymentStatus?: string;
-  createdAt: string;
-  items: { name: string; quantity: number; unitPrice?: number; total: number }[];
-}
-
-interface TelegramWebApp {
-  ready: () => void;
-  expand: () => void;
-  close: () => void;
-  initData: string;
-  initDataUnsafe?: {
-    user?: {
-      id: number;
-      first_name: string;
-      last_name?: string;
-      username?: string;
-    };
-  };
-  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp?: TelegramWebApp;
-    };
-  }
-}
+import { Product, ProductVariant, CartItem, Region, PaymentAccount, OrderHistoryEntry } from "./types";
+import {
+  lineKey,
+  lineUnit,
+  hasVariantChoice,
+  matchVariant,
+  variantOptions,
+  valueAvailable,
+  Lang,
+} from "./utils";
+import CartDrawer from "./components/CartDrawer";
+import OrderHistoryDrawer from "./components/OrderHistoryDrawer";
+import ProductDetailModal from "./components/ProductDetailModal";
+import "./shop.css";
 
 const urlParam = (key: string): string | null =>
   typeof window === "undefined"
     ? null
     : new URLSearchParams(window.location.search).get(key);
 
-type Lang = "en" | "my";
-
-// Minimal inline i18n — covers the Mini App chrome only (product/region names
-// come from the backend). No library needed for one page.
 const STRINGS: Record<string, { en: string; my: string }> = {
   welcome: { en: "Welcome", my: "ကြိုဆိုပါတယ်" },
   all: { en: "All", my: "အားလုံး" },
@@ -274,19 +103,15 @@ export default function TelegramShopPage() {
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderHistoryEntry[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  // Product detail modal (image slider + description + variant picker).
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [variantPick, setVariantPick] = useState<Record<string, string>>({});
   const [detailQty, setDetailQty] = useState(1);
 
-  // Current quantity of a cart line (by variant or product key), else 1.
   const cartQtyOf = (key: string) =>
     cart.find((i) => lineKey(i) === key)?.quantity ?? 1;
 
   const openDetail = (p: Product) => {
     if (hasVariantChoice(p)) {
-      // Pre-select the first valid combo so price/qty/add work immediately, and
-      // reflect that variant's existing cart quantity.
       const opts = variantOptions(p);
       const picks: Record<string, string> = {};
       for (const o of opts) {
@@ -305,36 +130,6 @@ export default function TelegramShopPage() {
     setDetailProduct(p);
   };
 
-  /** Human label for a resolved variant, e.g. "Red / Large". */
-  const variantLabelOf = (p: Product, picks: Record<string, string>) =>
-    variantOptions(p)
-      .map((o) => o.choices.find((c) => c.tok === picks[o.id])?.label)
-      .filter(Boolean)
-      .join(" / ");
-
-  // A value is selectable only if some active variant has it AND matches every
-  // OTHER already-picked level — so combos that don't exist (partial matrix)
-  // can't be chosen and never show a wrong/base price.
-  const valueAvailable = (
-    p: Product,
-    opts: VariantOption[],
-    opt: VariantOption,
-    tok: string,
-    picks: Record<string, string>,
-  ) =>
-    (p.variants ?? []).some(
-      (v) =>
-        v.isActive &&
-        v.optionValueIds[opt.idx] === tok &&
-        opts.every(
-          (o) =>
-            o.id === opt.id ||
-            !picks[o.id] ||
-            v.optionValueIds[o.idx] === picks[o.id],
-        ),
-    );
-
-  // Theme + language (persisted), and catalog filters.
   const [theme, setTheme] = useState<"dark" | "light">(
     () => persisted("tg-theme", "dark") as "dark" | "light",
   );
@@ -356,7 +151,6 @@ export default function TelegramShopPage() {
     localStorage.setItem("tg-lang", next);
   };
 
-  // User and checkout details
   const [telegramId, setTelegramId] = useState<string>(() => urlParam("tgId") ?? "12345678");
   const [fullName, setFullName] = useState<string>(() => urlParam("name") || "Guest User");
   const [username, setUsername] = useState<string>("");
@@ -395,7 +189,6 @@ export default function TelegramShopPage() {
     AYAPAY: "AYA Pay",
     CBPAY: "CB Pay",
   };
-  // COD plus every method that has a configured payment account.
   const payMethodOptions = [
     { value: "COD", label: t("cod") },
     ...Array.from(new Set(paymentAccounts.map((a) => a.method))).map((m) => ({
@@ -415,15 +208,9 @@ export default function TelegramShopPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
 
-  // Initialize Telegram WebApp variables
   const [initData, setInitData] = useState<string>("");
-  // Bot-signed fallback identity from the launch URL (?tgId&sig), used when
-  // Telegram supplies no signed initData (ngrok / some desktop launches).
   const [sig] = useState<string>(() => urlParam("sig") ?? "");
-  // Read identity from the Telegram WebApp SDK. We poll instead of relying on the
-  // script's onLoad because Telegram's in-app WebView sometimes serves the SDK
-  // from cache and never fires onLoad — leaving us stuck as "Guest User" with
-  // empty initData so the cart never synced. Poll until the SDK appears (~3s).
+
   useEffect(() => {
     let tries = 0;
     const id = setInterval(() => {
@@ -446,7 +233,6 @@ export default function TelegramShopPage() {
     return () => clearInterval(id);
   }, []);
 
-  // Fetch products and regions
   useEffect(() => {
     async function loadData() {
       try {
@@ -471,7 +257,6 @@ export default function TelegramShopPage() {
     loadData();
   }, []);
 
-  // Fetch cart from backend when we have an identity (initData or signed tgId)
   useEffect(() => {
     const hasAuth = initData || (telegramId && sig);
     if (!hasAuth || products.length === 0) return;
@@ -499,7 +284,6 @@ export default function TelegramShopPage() {
               }) => {
                 const prod = products.find((p) => p.id === item.productId);
                 if (!prod) return null;
-                // Trust the backend's stored price/name (already variant-aware).
                 return {
                   ...prod,
                   name: item.name,
@@ -521,7 +305,6 @@ export default function TelegramShopPage() {
     loadCart();
   }, [initData, sig, telegramId, products]);
 
-  // Build the auth query (initData, or signed tgId fallback) shared by cart/orders.
   const authQuery = () => {
     const q = new URLSearchParams();
     if (initData) q.set("initData", initData);
@@ -547,7 +330,6 @@ export default function TelegramShopPage() {
     }
   };
 
-  // Calculate township delivery fee
   let deliveryFee = 0;
   if (selectedTownshipId) {
     const region = regions.find((r) => r.id === selectedRegionId);
@@ -563,7 +345,6 @@ export default function TelegramShopPage() {
     }
   }
 
-  // Derived listings — category tab + search + price range + sort.
   const categories = ["All", ...Array.from(new Set(products.map((p) => p.category.name)))];
   const min = Number(minPrice) || 0;
   const max = Number(maxPrice) || Infinity;
@@ -575,9 +356,6 @@ export default function TelegramShopPage() {
     .sort((a, b) =>
       sortBy === "asc" ? a.price - b.price : sortBy === "desc" ? b.price - a.price : 0,
     );
-
-  const selectedRegion = regions.find((r) => r.id === selectedRegionId);
-  const selectedCity = selectedRegion?.cities.find((c) => c.id === selectedCityId);
 
   const subtotal = cart.reduce((sum, item) => sum + lineUnit(item).unit * item.quantity, 0);
   const total = subtotal + deliveryFee;
@@ -632,8 +410,6 @@ export default function TelegramShopPage() {
     });
   };
 
-  // Set a line to an absolute quantity (used by the detail modal so opening with
-  // an existing qty and pressing Add doesn't double it).
   const setCartLineQty = (
     product: Product,
     variant: ProductVariant | undefined,
@@ -729,532 +505,6 @@ export default function TelegramShopPage() {
         strategy="afterInteractive"
       />
 
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-          --theme-bg: #091413;
-          --theme-panel: rgba(176, 228, 204, 0.05);
-          --theme-border: rgba(176, 228, 204, 0.14);
-          --theme-accent: #b0e4cc;
-          --theme-accent-gradient: linear-gradient(135deg, #408a71 0%, #b0e4cc 100%);
-          --text-color: #eaf5ef;
-          --text-muted: #7fae9d;
-        }
-
-        body {
-          background-color: var(--theme-bg);
-          color: var(--text-color);
-          font-family: 'Outfit', sans-serif;
-          margin: 0;
-          padding: 0;
-          min-height: 100vh;
-        }
-
-        .container {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 16px;
-          min-height: 100vh;
-          background: var(--theme-bg);
-          color: var(--text-color);
-        }
-
-        /* Light theme — overrides the design tokens for this subtree. The cyan
-           accent is too pale on white, so darken it (and its gradient) for
-           readable price text, the logo, and active tabs. */
-        .container.light {
-          --theme-bg: #ffffff;
-          --theme-panel: #f1f5f9;
-          --theme-border: #cbd5e1;
-          --text-color: #0f172a;
-          --text-muted: #475569;
-          --theme-accent: #285a48;
-          --theme-accent-gradient: linear-gradient(135deg, #408a71 0%, #285a48 100%);
-        }
-
-        /* Accent-filled controls carry dark text in dark mode; flip to white on
-           the darker light-mode accent gradient so labels stay legible.
-           (.btn-add is excluded — it has a light panel background.) */
-        .container.light .btn-submit,
-        .container.light .category-tab.active {
-          color: #ffffff;
-        }
-
-        .toolbar {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          margin-bottom: 10px;
-        }
-
-        /* Search: pill shape with an inline magnifier icon. */
-        .toolbar .form-input {
-          margin: 0;
-          border-radius: 999px;
-          padding-left: 40px;
-          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
-          background-repeat: no-repeat;
-          background-position: left 14px center;
-        }
-        .toolbar .form-input:focus {
-          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
-          background-repeat: no-repeat;
-          background-position: left 14px center;
-        }
-
-        .icon-toggle {
-          flex: 0 0 auto;
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          color: var(--text-color);
-          border-radius: 8px;
-          padding: 6px 8px;
-          font-size: 14px;
-          line-height: 1;
-          cursor: pointer;
-          font-family: inherit;
-        }
-
-        .filter-row {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 16px;
-        }
-
-        .filter-row .form-input:first-child {
-          flex: 1.4;
-        }
-        .filter-row .form-input {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .filter-row .form-input {
-          margin: 0;
-        }
-
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid var(--theme-border);
-        }
-
-        .logo {
-          font-size: 24px;
-          font-weight: 700;
-          background: var(--theme-accent-gradient);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .cart-badge-btn {
-          position: relative;
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          border-radius: 50%;
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-
-        .cart-badge-btn:active {
-          transform: scale(0.9);
-        }
-
-        .badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          background: var(--theme-accent-gradient);
-          color: #091413;
-          font-size: 11px;
-          font-weight: 700;
-          border-radius: 50%;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 0 10px rgba(176, 228, 204, 0.35);
-        }
-
-        .categories {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          margin-bottom: 20px;
-          padding-bottom: 4px;
-          scrollbar-width: none;
-        }
-
-        .categories::-webkit-scrollbar {
-          display: none;
-        }
-
-        .category-tab {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          color: var(--text-muted);
-          padding: 8px 16px;
-          border-radius: 20px;
-          white-space: nowrap;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-
-        .category-tab.active {
-          background: var(--theme-accent-gradient);
-          color: #091413;
-          border-color: transparent;
-          font-weight: 600;
-        }
-
-        .product-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-
-        .product-card {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          border-radius: 16px;
-          padding: 12px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          backdrop-filter: blur(8px);
-        }
-
-        .prod-image-placeholder {
-          background: linear-gradient(135deg, rgba(64, 138, 113, 0.12) 0%, rgba(176, 228, 204, 0.1) 100%);
-          border-radius: 12px;
-          height: 100px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 36px;
-          margin-bottom: 10px;
-        }
-
-        .prod-name {
-          font-size: 15px;
-          font-weight: 600;
-          margin: 0 0 4px 0;
-        }
-
-        .prod-price {
-          color: var(--theme-accent);
-          font-weight: 700;
-          font-size: 14px;
-          margin-bottom: 8px;
-        }
-
-        .btn-add {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-accent);
-          color: var(--theme-accent);
-          border-radius: 8px;
-          padding: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: center;
-        }
-
-        .btn-add:active {
-          background: var(--theme-accent);
-          color: #091413;
-        }
-
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(11, 15, 25, 0.85);
-          backdrop-filter: blur(8px);
-          z-index: 1000;
-          display: flex;
-          align-items: flex-end;
-        }
-
-        .modal-content {
-          background: var(--theme-bg);
-          width: 100%;
-          max-height: 85vh;
-          border-radius: 24px 24px 0 0;
-          padding: 20px;
-          overflow-y: auto;
-          box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.5);
-          border-top: 1px solid var(--theme-border);
-          color: var(--text-color);
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-
-        .modal-title {
-          font-size: 20px;
-          font-weight: 700;
-        }
-
-        .close-btn {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: var(--text-color);
-        }
-
-        .cart-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 20px;
-        }
-
-        .cart-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding-bottom: 12px;
-          border-bottom: 1px solid var(--theme-border);
-        }
-
-        .cart-qty-ctrl {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .qty-btn {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          color: var(--text-color);
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-
-        .total-block {
-          background: var(--theme-panel);
-          border-radius: 12px;
-          padding: 12px;
-          margin-bottom: 20px;
-        }
-
-        .pay-account {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          border-radius: 12px;
-          padding: 12px;
-        }
-
-        .pay-account img {
-          -webkit-touch-callout: default !important;
-          -webkit-user-select: auto !important;
-          user-select: auto !important;
-        }
-
-        .file-btn {
-          display: inline-block;
-          background: var(--theme-panel);
-          border: 1px dashed var(--theme-accent);
-          color: var(--theme-accent);
-          border-radius: 10px;
-          padding: 10px 16px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          margin-bottom: 4px;
-        }
-
-        .order-card {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          border-radius: 12px;
-          padding: 12px;
-        }
-
-        .variant-chip {
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          color: var(--text-color);
-          border-radius: 999px;
-          padding: 7px 16px;
-          font-size: 14px;
-          font-family: inherit;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-        .variant-chip.active {
-          background: var(--theme-accent-gradient);
-          border-color: transparent;
-          color: #091413;
-          font-weight: 600;
-        }
-        .variant-chip:disabled {
-          opacity: 0.35;
-          cursor: not-allowed;
-          text-decoration: line-through;
-        }
-
-        /* Horizontal image slider — CSS scroll-snap, one image per view. */
-        .img-slider {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          scroll-snap-type: x mandatory;
-          -webkit-overflow-scrolling: touch;
-          border-radius: 12px;
-        }
-        .img-slider::-webkit-scrollbar {
-          height: 0;
-        }
-        .img-slider img {
-          flex: 0 0 100%;
-          width: 100%;
-          height: 240px;
-          object-fit: cover;
-          border-radius: 12px;
-          scroll-snap-align: center;
-        }
-
-        .order-status {
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--theme-accent);
-          background: var(--theme-bg);
-          border: 1px solid var(--theme-border);
-          border-radius: 999px;
-          padding: 2px 8px;
-        }
-
-        .total-row {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 6px;
-          font-size: 14px;
-        }
-
-        .total-row.grand {
-          font-size: 18px;
-          font-weight: 700;
-          border-top: 1px dashed var(--theme-border);
-          padding-top: 8px;
-          margin-top: 8px;
-          color: var(--theme-accent);
-        }
-
-        .form-group {
-          margin-bottom: 14px;
-        }
-
-        .form-group label {
-          display: block;
-          font-size: 13px;
-          color: var(--text-muted);
-          margin-bottom: 6px;
-        }
-
-        .form-input {
-          width: 100%;
-          box-sizing: border-box;
-          background: var(--theme-panel);
-          border: 1px solid var(--theme-border);
-          border-radius: 12px;
-          padding: 11px 14px;
-          color: var(--text-color);
-          font-family: inherit;
-          font-size: 14px;
-          transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-        }
-
-        /* Replace the native OS dropdown chrome with a themed chevron. */
-        select.form-input {
-          appearance: none;
-          -webkit-appearance: none;
-          -moz-appearance: none;
-          cursor: pointer;
-          padding-right: 36px;
-          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-        }
-
-        .form-input option {
-          background: var(--theme-bg);
-          color: var(--text-color);
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: var(--theme-accent);
-          background: var(--theme-bg);
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 22%, transparent);
-        }
-
-        .btn-submit {
-          background: var(--theme-accent-gradient);
-          color: #091413;
-          font-weight: 700;
-          border: none;
-          border-radius: 8px;
-          padding: 12px;
-          width: 100%;
-          cursor: pointer;
-          font-size: 16px;
-          box-shadow: 0 4px 15px rgba(64, 138, 113, 0.35);
-          margin-top: 10px;
-        }
-
-        .btn-submit:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .success-overlay {
-          text-align: center;
-          padding: 40px 20px;
-        }
-
-        .success-icon {
-          font-size: 64px;
-          animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); }
-        }
-      `}</style>
-
       <div className={`container ${theme === "light" ? "light" : ""}`}>
         {orderSuccess ? (
           <div className="success-overlay">
@@ -1292,7 +542,6 @@ export default function TelegramShopPage() {
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   {t("welcome")}, {fullName}
                 </div>
-                {/* Deploy marker — bump on each push to confirm Vercel updated. */}
                 <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #21 · order-detail ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -1412,533 +661,61 @@ export default function TelegramShopPage() {
             )}
 
             {/* Shopping Cart Drawer / Modal */}
-            {showCart && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <span className="modal-title">{t("shoppingCart")}</span>
-                    <button className="close-btn" onClick={() => setShowCart(false)}>
-                      ✕
-                    </button>
-                  </div>
-
-                  {cart.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "40px 0" }}>{t("cartEmpty")}</div>
-                  ) : (
-                    <>
-                      <div className="cart-list">
-                        {cart.map((item) => (
-                          <div className="cart-row" key={lineKey(item)}>
-                            <div>
-                              <div style={{ fontWeight: 600 }}>
-                                {item.name}
-                                {item.variantLabel ? ` (${item.variantLabel})` : ""}
-                              </div>
-                              <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                                {(() => {
-                                  const { base, unit, discounted } = lineUnit(item);
-                                  return discounted ? (
-                                    <>
-                                      <span
-                                        style={{ textDecoration: "line-through", opacity: 0.6 }}
-                                      >
-                                        {base.toLocaleString()}
-                                      </span>{" "}
-                                      <span style={{ color: "var(--theme-accent)", fontWeight: 600 }}>
-                                        {unit.toLocaleString()} Ks
-                                      </span>
-                                    </>
-                                  ) : (
-                                    `${unit.toLocaleString()} Ks`
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                            <div className="cart-qty-ctrl">
-                              <button className="qty-btn" onClick={() => updateQuantity(lineKey(item), -1)}>
-                                -
-                              </button>
-                              <span>{item.quantity}</span>
-                              <button className="qty-btn" onClick={() => updateQuantity(lineKey(item), 1)}>
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Checkout details Form */}
-                      <form onSubmit={handleCheckout}>
-                        <h3 style={{ margin: "20px 0 10px 0" }}>{t("checkoutDetails")}</h3>
-
-                        <div className="form-group">
-                          <label>{t("contactPhone")}</label>
-                          <input
-                            type="tel"
-                            className="form-input"
-                            required
-                            placeholder={t("phonePlaceholder")}
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                          />
-                        </div>
-
-                        <div className="form-group">
-                          <label>{t("regionState")}</label>
-                          <select
-                            className="form-input"
-                            required
-                            value={selectedRegionId}
-                            onChange={(e) => {
-                              setSelectedRegionId(e.target.value);
-                              setSelectedCityId("");
-                              setSelectedTownshipId("");
-                            }}
-                          >
-                            <option value="">{t("selectRegion")}</option>
-                            {regions.map((r) => (
-                              <option key={r.id} value={r.id}>
-                                {r.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="form-group">
-                          <label>{t("city")}</label>
-                          <select
-                            className="form-input"
-                            required
-                            disabled={!selectedRegionId}
-                            value={selectedCityId}
-                            onChange={(e) => {
-                              setSelectedCityId(e.target.value);
-                              setSelectedTownshipId("");
-                            }}
-                          >
-                            <option value="">{t("selectCity")}</option>
-                            {selectedRegion?.cities.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="form-group">
-                          <label>{t("township")}</label>
-                          <select
-                            className="form-input"
-                            required
-                            disabled={!selectedCityId}
-                            value={selectedTownshipId}
-                            onChange={(e) => setSelectedTownshipId(e.target.value)}
-                          >
-                            <option value="">{t("selectTownship")}</option>
-                            {selectedCity?.townships.map((t) => (
-                              <option key={t.id} value={t.id}>
-                                {t.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="form-group">
-                          <label>{t("detailedAddress")}</label>
-                          <textarea
-                            className="form-input"
-                            rows={2}
-                            required
-                            placeholder={t("addressPlaceholder")}
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                          />
-                        </div>
-
-                        <div className="form-group">
-                          <label>{t("paymentMethod")}</label>
-                          <select
-                            className="form-input"
-                            required
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                          >
-                            {payMethodOptions.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {paymentMethod !== "COD" &&
-                          (() => {
-                            const acc = paymentAccounts.find(
-                              (a) => a.method === paymentMethod,
-                            );
-                            // Bank transfer → account number first; wallets
-                            // (KPay/WavePay) → phone number first.
-                            const number =
-                              paymentMethod === "BANK_TRANSFER"
-                                ? acc?.accountNumber || acc?.phone || ""
-                                : acc?.phone || acc?.accountNumber || "";
-                            return (
-                              <div className="form-group">
-                                <label>{t("transferTo")}</label>
-                                {acc ? (
-                                  <div className="pay-account">
-                                    <div style={{ fontWeight: 600 }}>{acc.name}</div>
-                                    {acc.bankName && (
-                                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                        {acc.bankName}
-                                      </div>
-                                    )}
-                                    {number && (
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 8,
-                                          margin: "4px 0",
-                                        }}
-                                      >
-                                        <span style={{ fontWeight: 700, fontSize: 16 }}>
-                                          {number}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          className="icon-toggle"
-                                          onClick={() => copyNumber(number)}
-                                        >
-                                          📋 {copied ? t("copied") : t("copy")}
-                                        </button>
-                                      </div>
-                                    )}
-                                    {acc.description && (
-                                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                        {acc.description}
-                                      </div>
-                                    )}
-                                    {acc.qrImage && (
-                                      <>
-                                        <img
-                                          src={`/api/bot/payment-accounts/${acc.id}/qr`}
-                                          alt="QR"
-                                          onClick={() => openQrExternal(acc.id)}
-                                          style={{
-                                            width: "100%",
-                                            maxWidth: 320,
-                                            height: "auto",
-                                            objectFit: "contain",
-                                            display: "block",
-                                            marginTop: 10,
-                                            borderRadius: 12,
-                                            background: "#fff",
-                                            padding: 8,
-                                            cursor: "pointer",
-                                            WebkitTouchCallout: "default",
-                                            WebkitUserSelect: "auto",
-                                            userSelect: "auto",
-                                          }}
-                                        />
-                                        <button
-                                          type="button"
-                                          className="file-btn"
-                                          onClick={() => openQrExternal(acc.id)}
-                                          style={{ marginTop: 8 }}
-                                        >
-                                          ⬇ {t("saveQr")}
-                                        </button>
-                                        <div
-                                          style={{
-                                            fontSize: 11,
-                                            color: "var(--text-muted)",
-                                            marginTop: 4,
-                                          }}
-                                        >
-                                          {t("qrSaveHint")}
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                                    {t("noPayAccount")}
-                                  </div>
-                                )}
-
-                                <label style={{ marginTop: 12 }}>{t("uploadSlip")}</label>
-                                <label className="file-btn">
-                                  {proofUrl.startsWith("data:")
-                                    ? `✓ ${t("slipSelected")}`
-                                    : `📎 ${t("chooseImage")}`}
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleSlipUpload}
-                                    style={{ display: "none" }}
-                                  />
-                                </label>
-                                {proofUrl.startsWith("data:") && (
-                                  <img
-                                    src={proofUrl}
-                                    alt="slip"
-                                    style={{
-                                      width: 120,
-                                      marginTop: 8,
-                                      borderRadius: 8,
-                                      border: "1px solid var(--theme-border)",
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            );
-                          })()}
-
-                        <div className="total-block">
-                          <div className="total-row">
-                            <span>{t("subtotal")}</span>
-                            <span>{subtotal.toLocaleString()} Ks</span>
-                          </div>
-                          <div className="total-row">
-                            <span>{t("deliveryFee")}</span>
-                            <span>{deliveryFee.toLocaleString()} Ks</span>
-                          </div>
-                          <div className="total-row grand">
-                            <span>{t("total")}</span>
-                            <span>{total.toLocaleString()} Ks</span>
-                          </div>
-                        </div>
-
-                        <button className="btn-submit" type="submit" disabled={checkoutLoading}>
-                          {checkoutLoading
-                            ? t("placingOrder")
-                            : `${t("placeOrder")} • ${total.toLocaleString()} Ks`}
-                        </button>
-                      </form>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+            <CartDrawer
+              showCart={showCart}
+              setShowCart={setShowCart}
+              cart={cart}
+              updateQuantity={updateQuantity}
+              handleCheckout={handleCheckout}
+              phone={phone}
+              setPhone={setPhone}
+              address={address}
+              setAddress={setAddress}
+              selectedRegionId={selectedRegionId}
+              setSelectedRegionId={setSelectedRegionId}
+              selectedCityId={selectedCityId}
+              setSelectedCityId={setSelectedCityId}
+              selectedTownshipId={selectedTownshipId}
+              setSelectedTownshipId={setSelectedTownshipId}
+              regions={regions}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              payMethodOptions={payMethodOptions}
+              paymentAccounts={paymentAccounts}
+              proofUrl={proofUrl}
+              handleSlipUpload={handleSlipUpload}
+              copied={copied}
+              copyNumber={copyNumber}
+              openQrExternal={openQrExternal}
+              checkoutLoading={checkoutLoading}
+              t={t}
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              total={total}
+            />
 
             {/* Order History Modal */}
-            {showOrders && (
-              <div className="modal-overlay">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <span className="modal-title">{t("orderHistory")}</span>
-                    <button className="close-btn" onClick={() => setShowOrders(false)}>
-                      ✕
-                    </button>
-                  </div>
-
-                  {ordersLoading ? (
-                    <div style={{ textAlign: "center", padding: "40px 0" }}>{t("loading")}</div>
-                  ) : orders.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "40px 0" }}>{t("noOrders")}</div>
-                  ) : (
-                    <div className="cart-list">
-                      {orders.map((o) => (
-                        <div key={o.orderNo} className="order-card">
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ fontWeight: 700 }}>#{o.orderNo}</span>
-                            <span className="order-status">{o.status}</span>
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--text-muted)", margin: "4px 0" }}>
-                            {new Date(o.createdAt).toLocaleDateString()}
-                          </div>
-                          {o.items.map((i, idx) => (
-                            <div
-                              key={idx}
-                              style={{ fontSize: "13px", color: "var(--text-muted)" }}
-                            >
-                              • {i.name} ×{i.quantity}
-                              {i.unitPrice ? ` @ ${i.unitPrice.toLocaleString()}` : ""} —{" "}
-                              {i.total.toLocaleString()} Ks
-                            </div>
-                          ))}
-                          {o.paymentMethod && (
-                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
-                              {t("payment")}: {o.paymentMethod}
-                              {o.paymentStatus ? ` · ${o.paymentStatus}` : ""}
-                            </div>
-                          )}
-                          {o.shippingAddress && (
-                            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                              {t("shipTo")}: {o.shippingAddress}
-                            </div>
-                          )}
-                          <div style={{ textAlign: "right", fontWeight: 700, marginTop: "6px" }}>
-                            {t("total")}: {o.total.toLocaleString()} Ks
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <OrderHistoryDrawer
+              showOrders={showOrders}
+              setShowOrders={setShowOrders}
+              ordersLoading={ordersLoading}
+              orders={orders}
+              t={t}
+            />
 
             {/* Product detail — slider, description, stock, variant picker */}
-            {detailProduct &&
-              (() => {
-                const p = detailProduct;
-                const opts = variantOptions(p);
-                const hasVar = hasVariantChoice(p);
-                const matched = matchVariant(p, variantPick);
-                const imgs = (p.images ?? []).filter(Boolean);
-                const price = matched?.price ?? p.price;
-                const stock = matched?.stock ?? p.stock;
-                // Tier-adjusted unit price for the chosen quantity.
-                const priceInfo = lineUnit({
-                  ...p,
-                  quantity: detailQty,
-                  variantId: matched?.id,
-                  price,
-                });
-                return (
-                  <div className="modal-overlay">
-                    <div className="modal-content">
-                      <div className="modal-header">
-                        <span className="modal-title">{p.name}</span>
-                        <button className="close-btn" onClick={() => setDetailProduct(null)}>
-                          ✕
-                        </button>
-                      </div>
-
-                      {imgs.length > 0 ? (
-                        <div className="img-slider">
-                          {imgs.map((src, i) => (
-                            <img key={i} src={src} alt={`${p.name} ${i + 1}`} />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="prod-image-placeholder" style={{ height: 220 }}>
-                          🛍️
-                        </div>
-                      )}
-
-                      <div className="prod-price" style={{ margin: "12px 0 4px" }}>
-                        {hasVar && !matched ? (
-                          `${t("from")} ${p.price.toLocaleString()} Ks`
-                        ) : priceInfo.discounted ? (
-                          <>
-                            <span style={{ textDecoration: "line-through", opacity: 0.6 }}>
-                              {priceInfo.base.toLocaleString()}
-                            </span>{" "}
-                            {priceInfo.unit.toLocaleString()} Ks
-                          </>
-                        ) : (
-                          `${priceInfo.unit.toLocaleString()} Ks`
-                        )}
-                      </div>
-                      <div
-                        style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10 }}
-                      >
-                        {t("inStock")}: {stock}
-                      </div>
-                      {p.description && (
-                        <div
-                          style={{
-                            fontSize: 14,
-                            color: "var(--text-muted)",
-                            marginBottom: 12,
-                            lineHeight: 1.5,
-                          }}
-                          dangerouslySetInnerHTML={{ __html: mdToHtml(p.description) }}
-                        />
-                      )}
-
-                      {opts.map((opt, oi) => (
-                        <div key={opt.id} style={{ marginBottom: 14 }}>
-                          <div
-                            style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}
-                          >
-                            {opt.name}
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                            {opt.choices.map((c) => {
-                              const ok = valueAvailable(p, opts, opt, c.tok, variantPick);
-                              return (
-                                <button
-                                  key={c.tok}
-                                  disabled={!ok}
-                                  className={`variant-chip ${variantPick[opt.id] === c.tok ? "active" : ""}`}
-                                  onClick={() => {
-                                    const next = { ...variantPick, [opt.id]: c.tok };
-                                    for (let j = oi + 1; j < opts.length; j++)
-                                      delete next[opts[j].id];
-                                    for (let j = oi + 1; j < opts.length; j++) {
-                                      const o = opts[j];
-                                      const first = o.choices.find((ch) =>
-                                        valueAvailable(p, opts, o, ch.tok, next),
-                                      );
-                                      if (first) next[o.id] = first.tok;
-                                    }
-                                    setVariantPick(next);
-                                    // Reflect the chosen variant's existing cart qty.
-                                    const m = matchVariant(p, next);
-                                    setDetailQty(m ? cartQtyOf(m.id) : 1);
-                                  }}
-                                >
-                                  {c.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                          margin: "8px 0 14px",
-                        }}
-                      >
-                        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Qty</span>
-                        <div className="cart-qty-ctrl">
-                          <button
-                            className="qty-btn"
-                            onClick={() => setDetailQty((q) => Math.max(1, q - 1))}
-                          >
-                            -
-                          </button>
-                          <span>{detailQty}</span>
-                          <button className="qty-btn" onClick={() => setDetailQty((q) => q + 1)}>
-                            +
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        className="btn-submit"
-                        disabled={hasVar && !matched}
-                        onClick={() => {
-                          if (hasVar) {
-                            if (!matched) return;
-                            setCartLineQty(
-                              p,
-                              matched,
-                              variantLabelOf(p, variantPick),
-                              detailQty,
-                            );
-                          } else {
-                            setCartLineQty(p, undefined, undefined, detailQty);
-                          }
-                          setDetailProduct(null);
-                        }}
-                      >
-                        {cart.some((i) => lineKey(i) === (matched?.id ?? p.id))
-                          ? t("updateCart")
-                          : t("addToCart")}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
+            <ProductDetailModal
+              detailProduct={detailProduct}
+              setDetailProduct={setDetailProduct}
+              variantPick={variantPick}
+              setVariantPick={setVariantPick}
+              detailQty={detailQty}
+              setDetailQty={setDetailQty}
+              cart={cart}
+              setCartLineQty={setCartLineQty}
+              t={t}
+              cartQtyOf={cartQtyOf}
+            />
           </>
         )}
       </div>

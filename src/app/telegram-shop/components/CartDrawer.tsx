@@ -25,8 +25,6 @@ interface CartDrawerProps {
   setPaymentMethod: (method: string) => void;
   payMethodOptions: { value: string; label: string }[];
   paymentAccounts: PaymentAccount[];
-  proofUrl: string;
-  handleSlipUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   copied: boolean;
   copyNumber: (val: string) => void;
   openQrExternal: (id: string) => void;
@@ -58,8 +56,6 @@ export default function CartDrawer({
   setPaymentMethod,
   payMethodOptions,
   paymentAccounts,
-  proofUrl,
-  handleSlipUpload,
   copied,
   copyNumber,
   openQrExternal,
@@ -332,30 +328,15 @@ export default function CartDrawer({
                         </div>
                       )}
 
-                      <label style={{ marginTop: 12 }}>{t("uploadSlip")}</label>
-                      <label className="file-btn">
-                        {proofUrl.startsWith("data:")
-                          ? `✓ ${t("slipSelected")}`
-                          : `📎 ${t("chooseImage")}`}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleSlipUpload}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                      {proofUrl.startsWith("data:") && (
-                        <img
-                          src={proofUrl}
-                          alt="slip"
-                          style={{
-                            width: 120,
-                            marginTop: 8,
-                            borderRadius: 8,
-                            border: "1px solid var(--theme-border)",
-                          }}
-                        />
-                      )}
+                      <div
+                        style={{
+                          marginTop: 12,
+                          fontSize: 13,
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        ℹ️ {t("slipAfterOrder")}
+                      </div>
                     </div>
                   );
                 })()}

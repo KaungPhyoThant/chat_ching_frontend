@@ -84,6 +84,11 @@ const STRINGS: Record<string, { en: string; my: string }> = {
   shipTo: { en: "Ship to", my: "ပို့ဆောင်ရန်" },
   payNow: { en: "💳 Pay now", my: "💳 ယခု ပေးချေရန်" },
   submitPayment: { en: "Submit payment", my: "ငွေပေးချေမှု တင်ရန်" },
+  sendSlip: { en: "Send payment slip", my: "ငွေလွှဲ slip ပို့ရန်" },
+  slipAfterOrder: {
+    en: "Pay to the account above, then send your slip after placing the order.",
+    my: "အပေါ်က account ကို ပေးချေပြီး order တင်ပြီးမှ slip ပို့ပါ။",
+  },
   noOrders: { en: "No orders yet.", my: "မှာယူမှု မရှိသေးပါ။" },
   orderPlaced: { en: "Order Placed!", my: "မှာယူပြီးပါပြီ!" },
   orderNotified: {
@@ -164,21 +169,26 @@ export default function TelegramShopPage() {
   const [selectedTownshipId, setSelectedTownshipId] = useState("");
 
   const [paymentMethod, setPaymentMethod] = useState<string>("COD");
-  const [proofUrl, setProofUrl] = useState("");
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
   const [copied, setCopied] = useState(false);
   // Pay-now for an existing pending order.
-  const [payOrder, setPayOrder] = useState<OrderHistoryEntry | null>(null);
+  const [payOrder, setPayOrder] = useState<{
+    orderNo: string;
+    total: number;
+  } | null>(null);
   const [payMethod, setPayMethod] = useState("");
   const [payProof, setPayProof] = useState("");
   const [payBusy, setPayBusy] = useState(false);
 
-  const openPayNow = (o: OrderHistoryEntry) => {
-    const first = paymentAccounts[0]?.method ?? "";
-    setPayMethod(first);
+  const openPayNow = (
+    o: { orderNo: string; total: number },
+    preferMethod?: string,
+  ) => {
+    setPayMethod(preferMethod || paymentAccounts[0]?.method || "");
     setPayProof("");
     setPayOrder(o);
     setShowOrders(false);
+    setOrderSuccess(null);
   };
 
   const submitPayNow = async () => {
@@ -237,16 +247,9 @@ export default function TelegramShopPage() {
     })),
   ];
 
-  const handleSlipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () =>
-      setProofUrl(typeof reader.result === "string" ? reader.result : "");
-    reader.readAsDataURL(file);
-  };
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  const [successTotal, setSuccessTotal] = useState(0);
 
   const [initData, setInitData] = useState<string>("");
   const [sig] = useState<string>(() => urlParam("sig") ?? "");
@@ -509,7 +512,7 @@ export default function TelegramShopPage() {
           address,
           townshipId: selectedTownshipId,
           paymentMethod,
-          proofUrl: paymentMethod !== "COD" ? proofUrl || "uploaded_via_miniapp" : undefined,
+          // Slip is now uploaded after the order is confirmed (success screen).
           items: cart.map((i) => ({
             productId: i.id,
             variantId: i.variantId,
@@ -523,9 +526,9 @@ export default function TelegramShopPage() {
       if (res.ok && responseData.success) {
         const orderInfo = responseData.data;
         setOrderSuccess(orderInfo?.orderNo);
+        setSuccessTotal(total);
         setCart([]);
         setShowCart(false);
-        setProofUrl("");
       } else {
         alert("Checkout failed. Please try again.");
       }
@@ -556,6 +559,20 @@ export default function TelegramShopPage() {
             <p style={{ color: "var(--text-muted)", marginTop: "10px" }}>
               {t("orderNotified")}
             </p>
+            {paymentMethod !== "COD" && orderSuccess && (
+              <button
+                className="btn-submit"
+                style={{ maxWidth: 280, margin: "20px auto 0" }}
+                onClick={() =>
+                  openPayNow(
+                    { orderNo: orderSuccess, total: successTotal },
+                    paymentMethod,
+                  )
+                }
+              >
+                💳 {t("sendSlip")}
+              </button>
+            )}
             <button
               className="btn-submit"
               style={{ maxWidth: 280, margin: "20px auto 0" }}
@@ -582,7 +599,7 @@ export default function TelegramShopPage() {
                 <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   {t("welcome")}, {fullName}
                 </div>
-                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #22 · pay-now ✅</div>
+                <div style={{ fontSize: "10px", color: "#fa8c16" }}>build #23 · slip-after-order ✅</div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button className="icon-toggle" onClick={toggleLang} title="Language">
@@ -722,8 +739,6 @@ export default function TelegramShopPage() {
               setPaymentMethod={setPaymentMethod}
               payMethodOptions={payMethodOptions}
               paymentAccounts={paymentAccounts}
-              proofUrl={proofUrl}
-              handleSlipUpload={handleSlipUpload}
               copied={copied}
               copyNumber={copyNumber}
               openQrExternal={openQrExternal}
